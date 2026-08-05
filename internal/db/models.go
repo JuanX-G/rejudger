@@ -2,7 +2,7 @@
 // versions:
 //   sqlc v1.31.1
 
-package revit
+package db
 
 import (
 	"github.com/jackc/pgx/v5/pgtype"
@@ -50,7 +50,7 @@ type SectionPipeline struct {
 type User struct {
 	ID         int64
 	Name       string
-	InternalID pgtype.Int4
+	InternalID pgtype.Text
 	Password   string
 	Email      pgtype.Text
 }

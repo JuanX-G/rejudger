@@ -5,6 +5,6 @@ sql:
     schema: "schema.sql"
     gen:
       go:
-        package: "revit"
+        package: "db"
         out: "./internal/db"
         sql_package: "pgx/v5"

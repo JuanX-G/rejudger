@@ -1,7 +1,7 @@
 CREATE TABLE users (
 	id   		BIGSERIAL PRIMARY KEY,
 	name 		TEXT NOT NULL UNIQUE,
-	internal_id	INT,
+	internal_id	TEXT UNIQUE,
 	password 	TEXT NOT NULL,
 	email		TEXT UNIQUE
 );

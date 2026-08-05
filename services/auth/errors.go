@@ -31,3 +31,12 @@ func (a AuthError) Error() string {
 		return "unknown auth error"
 	}
 }
+
+func (a AuthError) Is(target error) bool {
+	if other, ok := target.(AuthError); ok {
+		return a.errType == other.errType
+	}
+	return false
+}
+
+var ErrorNoSuchSession = AuthError{errType: AuthErrorNoSuchSession}

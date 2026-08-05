@@ -13,7 +13,7 @@ const (
 	PermissionHardVeto
 	PermissionView
 	PermissionSubmit
-	PermissionManage
+	PermissionWrite
 	PermissionUnknownAction
 )
 
@@ -29,8 +29,8 @@ func ParseActionPermission(s string) (ActionPermission, error) {
 		return PermissionView, nil
 	case "Submit":
 		return PermissionSubmit, nil
-	case "Manage":
-		return PermissionManage, nil
+	case "Write":
+		return PermissionWrite, nil
 	default:
 		return PermissionUnknownAction, PermissionConfigError{errType: PermissionConfigErrorInvalidAction}
 	}
@@ -74,6 +74,7 @@ func NewPermissionSetFromString(s string) (PermissionSet, error) {
 	retSet := PermissionSet{Context: parts[0]}
 	perms := strings.ReplaceAll(parts[1], " ", "")
 	permsParts := strings.SplitSeq(perms, ",")
+	retSet.Permissions = make(map[ActionPermission]struct{})
 	for p := range permsParts {
 		action, err := ParseActionPermission(p)
 		if err != nil {

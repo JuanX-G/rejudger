@@ -13,13 +13,13 @@ func _() {
 	_ = x[PermissionHardVeto-2]
 	_ = x[PermissionView-3]
 	_ = x[PermissionSubmit-4]
-	_ = x[PermissionManage-5]
+	_ = x[PermissionWrite-5]
 	_ = x[PermissionUnknownAction-6]
 }
 
-const _ActionPermission_name = "PlusOneSoftVetoHardVetoViewSubmitManageUnknownAction"
+const _ActionPermission_name = "PlusOneSoftVetoHardVetoViewSubmitWriteUnknownAction"
 
-var _ActionPermission_index = [...]uint8{0, 7, 15, 23, 27, 33, 39, 52}
+var _ActionPermission_index = [...]uint8{0, 7, 15, 23, 27, 33, 38, 51}
 
 func (i ActionPermission) String() string {
 	idx := int(i) - 0

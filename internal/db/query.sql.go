@@ -3,7 +3,7 @@
 //   sqlc v1.31.1
 // source: query.sql
 
-package revit
+package db
 
 import (
 	"context"
@@ -12,8 +12,8 @@ import (
 )
 
 const addPermissionToRole = `-- name: AddPermissionToRole :exec
-INSERT INTO role_permissions (role_id, permission_id)
-VALUES ($1, $2)
+insert into role_permissions (role_id, permission_id)
+values ($1, $2)
 `
 
 type AddPermissionToRoleParams struct {
@@ -26,29 +26,18 @@ func (q *Queries) AddPermissionToRole(ctx context.Context, arg AddPermissionToRo
 	return err
 }
 
-const createUser = `-- name: CreateUser :exec
-INSERT INTO users (
-  name, internal_id, password, email
-) VALUES (
-  $1, $2, $3, $4
-)
-RETURNING id, name, internal_id, password, email
+const addUserToRole = `-- name: AddUserToRole :exec
+INSERT INTO user_roles (user_id, role_id)
+VALUES ($1, $2)
 `
 
-type CreateUserParams struct {
-	Name       string
-	InternalID pgtype.Int4
-	Password   string
-	Email      pgtype.Text
+type AddUserToRoleParams struct {
+	UserID int64
+	RoleID int32
 }
 
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
-	_, err := q.db.Exec(ctx, createUser,
-		arg.Name,
-		arg.InternalID,
-		arg.Password,
-		arg.Email,
-	)
+func (q *Queries) AddUserToRole(ctx context.Context, arg AddUserToRoleParams) error {
+	_, err := q.db.Exec(ctx, addUserToRole, arg.UserID, arg.RoleID)
 	return err
 }
 
@@ -217,6 +206,24 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email pgtype.Text) (User, 
 	return i, err
 }
 
+const getUserByInternalId = `-- name: GetUserByInternalId :one
+SELECT id, name, internal_id, password, email FROM users
+WHERE internal_id = $1 LIMIT 1
+`
+
+func (q *Queries) GetUserByInternalId(ctx context.Context, internalID pgtype.Text) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByInternalId, internalID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.InternalID,
+		&i.Password,
+		&i.Email,
+	)
+	return i, err
+}
+
 const getUserByName = `-- name: GetUserByName :one
 SELECT id, name, internal_id, password, email FROM users
 WHERE name = $1 LIMIT 1
@@ -311,6 +318,32 @@ VALUES ($1) RETURNING id, name
 
 func (q *Queries) InsertRole(ctx context.Context, name string) error {
 	_, err := q.db.Exec(ctx, insertRole, name)
+	return err
+}
+
+const insertUser = `-- name: InsertUser :exec
+INSERT INTO users (
+  name, internal_id, password, email
+) VALUES (
+  $1, $2, $3, $4
+)
+RETURNING id, name, internal_id, password, email
+`
+
+type InsertUserParams struct {
+	Name       string
+	InternalID pgtype.Text
+	Password   string
+	Email      pgtype.Text
+}
+
+func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) error {
+	_, err := q.db.Exec(ctx, insertUser,
+		arg.Name,
+		arg.InternalID,
+		arg.Password,
+		arg.Email,
+	)
 	return err
 }
 

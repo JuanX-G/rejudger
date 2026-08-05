@@ -10,11 +10,15 @@ WHERE email = $1 LIMIT 1;
 SELECT * FROM users
 WHERE name = $1 LIMIT 1;
 
+-- name: GetUserByInternalId :one
+SELECT * FROM users
+WHERE internal_id = $1 LIMIT 1;
+
 -- name: GetBasicInfoByUserName :one
 SELECT password, id, name FROM users
 WHERE name = $1 LIMIT 1;
 
--- name: CreateUser :exec
+-- name: InsertUser :exec
 INSERT INTO users (
   name, internal_id, password, email
 ) VALUES (
@@ -42,6 +46,7 @@ WHERE ur.user_id = $1;
 INSERT INTO permissions (action, context)
 VALUES ($1, $2);
 
+
 -- name: DeletePermission :exec
 DELETE FROM permissions WHERE context = $1 AND action = $2;
 
@@ -63,7 +68,11 @@ SELECT * FROM roles
 WHERE name = $1 LIMIT 1;
 
 -- name: AddPermissionToRole :exec
-INSERT INTO role_permissions (role_id, permission_id)
+insert into role_permissions (role_id, permission_id)
+values ($1, $2);
+
+-- name: AddUserToRole :exec
+INSERT INTO user_roles (user_id, role_id)
 VALUES ($1, $2);
 
 -- name: RemovePermissionFromRole :exec

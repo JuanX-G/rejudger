@@ -1,72 +1,33 @@
 package config
 
 import (
-	"strconv"
-	"unicode"
-	"strings"
+	"fmt"
+	"os"
+
+	"gopkg.in/yaml.v3"
 )
 
-type Pipeline struct {
-	Name string `yaml:"name"`
-	Stages []PipelineStage `yaml:"stages"`
+type ConfigMgr struct {
+	Base *BaseConfig
+	Pipelines []Pipeline
 }
 
-type PipelineStage struct {
-	Name string `yaml:"name"`
-	PlusOnesRequired int `yaml:"plus_ones_required"`
-	Blind bool `yaml:"blind"`
-	SoftVeto bool `yaml:"soft_veto"`
-	HasDeadline bool `yaml:"has_deadline"`
-	Deadline StageDeadline `yaml:"deadline"`
-}
-
-type StageDeadline struct {
-	FrequencyStr string `yaml:"frequency"`
-	frequencyDays int
-	frequencHours int
-	frequencyDayOfTheWeek int
-	frequencyDayOfTheMonth int
-}
-
-func(s *StageDeadline) ParseDeadline() error {
-	if len(s.FrequencyStr) >= 2 {
-		if s.FrequencyStr[0] == 'D' {
-			daysStr := strings.Builder{}
-			hourStr := strings.Builder{}
-			for i, c := range s.FrequencyStr {
-				if !unicode.IsNumber(c) {
-					if c == 'H' {
-						for j := i; i < len(s.FrequencyStr); j++ {
-							hourStr.WriteByte(s.FrequencyStr[j])
-						}
-						break
-					} else {
-						break // TODO: error
-					}
-				} else {
-					daysStr.WriteRune(c)
-				}
-			}
-			days, err := strconv.Atoi(daysStr.String())
-			if err != nil {
-				return err
-			}
-			s.frequencyDays = days
-			var hours int
-			if hourStr.Len() > 0 {
-				hours, err = strconv.Atoi(hourStr.String())
-				if err != nil {
-					return err
-				}
-			}
-			s.frequencHours = hours
-		} else if s.FrequencyStr[0] == 'W' {
-			day, err := strconv.Atoi(string(s.FrequencyStr[1]))
-			if err != nil {
-				return err
-			}
-			s.frequencyDayOfTheWeek = day
-		}
+func NewConfigMgr(fileName string) (*ConfigMgr, error) {
+	base, err := LoadBaseConfig(fileName)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+	pipelines := make([]Pipeline, 0)
+	forDir(base.PipelieConfigPath, func(file *os.File) error {
+		dec := yaml.NewDecoder(file)
+		pipeline := Pipeline{}
+		err = dec.Decode(&pipeline)
+		if err != nil {
+			return ConfigError{errType: ConfigErrorDecodeError, msg: fmt.Sprintf("config error occured; yaml.decoder.decode() reported: %s", err.Error())}
+		}
+		pipelines = append(pipelines, pipeline)
+		return nil
+	})
+	return &ConfigMgr{Base: base, Pipelines: pipelines}, nil
 }
+

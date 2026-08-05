@@ -2,6 +2,7 @@ package auth
 
 import (
 	"net/http"
+
 	"revit/internal/permissions"
 )
 
@@ -34,3 +35,6 @@ func (a *AuthManager) HasPermissionMiddleware(next http.HandlerFunc, context str
 		next(w, r)
 	})
 }
+
+
+

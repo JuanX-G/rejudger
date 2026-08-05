@@ -16,6 +16,10 @@ type AuthManager struct {
 	sessions map[string]*customSync.PointerLock[Session] //map a token (string) to session info
 }
 
+func NewAuthManager() *AuthManager {
+	return &AuthManager{sessions: make(map[string]*customSync.PointerLock[Session])}
+}
+
 // getSessionLock is an internal function enabling the methods to lock the sessions map for shorter periods of time.
 // It resolves the session for a specified token, returns a AuthError with type AuthErrorNoSuchSession
 // if it fails to find a session for that token. It is safe for concurent calls.
@@ -31,7 +35,7 @@ func (a *AuthManager) getSessionLock(token string) (*customSync.PointerLock[Sess
 	return s, nil
 }
 
-func (a *AuthManager) deleteToken(token string) (error) {
+func (a *AuthManager) DeleteToken(token string) (error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	_, found := a.sessions[token]
@@ -138,11 +142,42 @@ func (a *AuthManager) IsValid(token string) error {
 	session.WithReadPointer(func(s *Session) {
 		if time.Now().After(s.Expiry) {
 			verifyErr = AuthError{errType: AuthErrorExpiredSession}
-			go a.deleteToken(token)
+			go a.DeleteToken(token)
 			return
 		}
 	})
 
+
+	return verifyErr
+}
+
+func (a *AuthManager) HasAllPermissions(token string, context string, required ...permissions.ActionPermission) error {
+	session, err := a.getSessionLock(token)
+	if err != nil {
+		return err
+	}
+
+	var verifyErr error
+	session.WithReadPointer(func(s *Session) {
+		if time.Now().After(s.Expiry) {
+			verifyErr = AuthError{errType: AuthErrorExpiredSession}
+			return
+		}
+		perms, ok := s.Permissions[context]
+		if !ok {
+			verifyErr = AuthError{errType: AuthErrorForbidden}
+			return
+		}
+
+		for _, req := range required {
+			if !permissions.HasPermission(perms, req) {
+				verifyErr = AuthError{errType: AuthErrorForbidden}
+				return
+			}
+		}
+
+		verifyErr = nil
+	})
 
 	return verifyErr
 }

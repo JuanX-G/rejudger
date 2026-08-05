@@ -1,7 +1,7 @@
 package login
 
 import (
-	"fmt"
+	//"fmt"
 )
 
 type FetchPermissionsQuery struct {
