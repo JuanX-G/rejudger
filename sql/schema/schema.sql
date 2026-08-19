@@ -24,12 +24,31 @@ CREATE TABLE section_pipelines (
 );
 
 CREATE TABLE pipelines (
-	id 		BIGSERIAL PRIMARY KEY,
-	name 		TEXT NOT NULL UNIQUE,
-	version		TEXT NOT NULL UNIQUE,
-	description 	TEXT
+    id          BIGSERIAL PRIMARY KEY,
+    name        TEXT NOT NULL,
+    version     JSONB NOT NULL UNIQUE,
+    description TEXT
 );
 
+CREATE TABLE stages (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    version JSONB NOT NULL UNIQUE,
+    plus_one_required SMALLINT NOT NULL,
+    blind BOOL NOT NULL,
+    soft_veto BOOL NOT NULL,
+    has_deadline BOOL NOT NULL,
+    deadline_str TEXT
+);
+
+CREATE TABLE pipeline_stages (
+    pipeline_id BIGINT NOT NULL REFERENCES pipelines(id) ON DELETE CASCADE,
+    stage_id    BIGINT NOT NULL REFERENCES stages(id),
+    position    INT NOT NULL,
+
+    PRIMARY KEY (pipeline_id, position),
+    UNIQUE (pipeline_id, stage_id)
+);
 
 CREATE TABLE roles (
 	id SERIAL PRIMARY KEY,
@@ -40,7 +59,7 @@ CREATE TABLE permissions (
 	id SERIAL PRIMARY KEY,
 	action TEXT NOT NULL,
 	context TEXT NOT NULL,
-  
+
 
 	UNIQUE(action, context)
 );
@@ -58,5 +77,3 @@ CREATE TABLE user_roles (
 
     PRIMARY KEY (user_id, role_id)
 );
-
-

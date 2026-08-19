@@ -22,8 +22,14 @@ type Permission struct {
 type Pipeline struct {
 	ID          int64
 	Name        string
-	Version     string
+	Version     []byte
 	Description pgtype.Text
+}
+
+type PipelineStage struct {
+	PipelineID int64
+	StageID    int64
+	Position   int32
 }
 
 type Role struct {
@@ -45,6 +51,17 @@ type Section struct {
 type SectionPipeline struct {
 	SectionID  int32
 	PipelineID int32
+}
+
+type Stage struct {
+	ID              int64
+	Name            string
+	Version         []byte
+	PlusOneRequired int16
+	Blind           bool
+	SoftVeto        bool
+	HasDeadline     bool
+	DeadlineStr     pgtype.Text
 }
 
 type User struct {

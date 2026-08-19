@@ -56,7 +56,7 @@ type PermissionConfigError struct {
 func (p PermissionConfigError) Error() string {
 	switch p.errType {
 	case PermissionConfigErrorInvalidString:
-		return "inavlid string format; possibly missing ':'"
+		return "inavlid string format; possibly missing '::'"
 	case PermissionConfigErrorInvalidPermissionSet:
 		return "inavlid format for the set of permissions"
 	case PermissionConfigErrorInvalidAction:
@@ -67,7 +67,7 @@ func (p PermissionConfigError) Error() string {
 }
 
 func NewPermissionSetFromString(s string) (PermissionSet, error) {
-	parts := strings.Split(s, ":")
+	parts := strings.Split(s, "::")
 	if len(parts) != 2 {
 		return PermissionSet{}, PermissionConfigError{errType: PermissionConfigErrorInvalidString}
 	}

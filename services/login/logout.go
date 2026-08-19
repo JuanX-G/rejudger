@@ -29,7 +29,6 @@ func (l *LoginManager) LogoutHandler() http.HandlerFunc {
 			}
 		}
 		jsonHelpers.WriteJSON(w, http.StatusOK, logoutResponse{Success: true, Message: "logged out"})
-		return
 	})
 
 }

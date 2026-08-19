@@ -2,7 +2,8 @@ package config
 
 type BaseConfig struct {
 	InstanceName string `yaml:"name"`
-	RemoteUserManagment bool `yaml:"remote_user_managment"`
+	RemoteUserManagment string `yaml:"remote_user_managment"`
+	RemoteUserManagmentOn bool
 	PipelieConfigPath string `yaml:"pipeline_config_path"`
 	RoleConfigPath string `yaml:"role_config_path"`
 	UserConfigPath string `yaml:"user_config_path"`

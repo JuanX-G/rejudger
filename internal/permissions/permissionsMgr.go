@@ -9,9 +9,9 @@ import (
 )
 
 type PermissionsManager struct {
-	db *pgxpool.Pool
+	db    *pgxpool.Pool
 	store *store.Store
-	ctx context.Context
+	ctx   context.Context
 }
 
 func NewPermissionManager(ctx context.Context, pool *pgxpool.Pool) (*PermissionsManager, error) {
@@ -23,30 +23,30 @@ func (p *PermissionsManager) GetUserPermissions(userId int) ([]PermissionSet, er
 	if err != nil {
 		return []PermissionSet{}, err
 	}
-    sets := make(map[string]*PermissionSet)
+	sets := make(map[string]*PermissionSet)
 
-    for _, row := range perms {
-        action, err := ParseActionPermission(row.Action)
-        if err != nil {
-            return nil, err
-        }
+	for _, row := range perms {
+		action, err := ParseActionPermission(row.Action)
+		if err != nil {
+			return nil, err
+		}
 
-        set, ok := sets[row.Context]
-        if !ok {
-            set = &PermissionSet{
-                Context: row.Context,
-                Permissions: make(map[ActionPermission]struct{}),
-            }
-            sets[row.Context] = set
-        }
+		set, ok := sets[row.Context]
+		if !ok {
+			set = &PermissionSet{
+				Context:     row.Context,
+				Permissions: make(map[ActionPermission]struct{}),
+			}
+			sets[row.Context] = set
+		}
 
-        set.Permissions[action] = struct{}{}
-    }
+		set.Permissions[action] = struct{}{}
+	}
 
-    result := make([]PermissionSet, 0, len(sets))
-    for _, set := range sets {
-        result = append(result, *set)
-    }
+	result := make([]PermissionSet, 0, len(sets))
+	for _, set := range sets {
+		result = append(result, *set)
+	}
 	return result, nil
 }
 
@@ -55,7 +55,7 @@ func (p *PermissionsManager) InsertPermission(ctx context.Context, context strin
 }
 
 func (p *PermissionsManager) InsertPermissionSet(ctx context.Context, set PermissionSet) error {
-	queryFn := func (q *db.Queries) error {
+	queryFn := func(q *db.Queries) error {
 		for k := range set.Permissions {
 			err := q.InsertPermission(ctx, db.InsertPermissionParams{Context: set.Context, Action: k.String()})
 			if err != nil {
@@ -67,7 +67,7 @@ func (p *PermissionsManager) InsertPermissionSet(ctx context.Context, set Permis
 	return p.store.ExecTx(ctx, queryFn)
 }
 
-func (p *PermissionsManager) queriesInsertPermissionSet(ctx context.Context, q *db.Queries, set PermissionSet) error {
+func QueriesInsertPermissionSet(ctx context.Context, q *db.Queries, set PermissionSet) error {
 	for k := range set.Permissions {
 		err := q.InsertPermission(ctx, db.InsertPermissionParams{Context: set.Context, Action: k.String()})
 		if err != nil {
@@ -97,12 +97,23 @@ func (p *PermissionsManager) GetRoleByName(ctx context.Context, name string) (db
 	return role, nil
 }
 
-func (p *PermissionsManager) AddPermissionToRole(ctx context.Context, permissionID int32, roleID int32) (error) {
+func (p *PermissionsManager) AddPermissionToRole(ctx context.Context, permissionID int32, roleID int32) error {
 	return p.store.Queries.AddPermissionToRole(ctx, db.AddPermissionToRoleParams{PermissionID: permissionID, RoleID: roleID})
 }
 
+func (p *PermissionsManager) GetPermissionId(ctx context.Context, context string, action ActionPermission) (int, error) {
+	id, err := p.store.Queries.GetPermissionId(ctx, db.GetPermissionIdParams{Context: context, Action: action.String()})
+	if err != nil {
+		return -1, err
+	}
+	return int(id), nil
+}
 
-func (p *PermissionsManager) AddRoleWithPermissions(ctx context.Context, roleName string, perms PermissionSet) (error) {
+func (p *PermissionsManager) GetExecTx() func(context.Context, func(*db.Queries) error) error {
+	return p.store.ExecTx
+}
+
+func (p *PermissionsManager) AddRoleWithPermissions(ctx context.Context, roleName string, perms PermissionSet) error {
 	queryFn := func(q *db.Queries) error {
 		err := q.InsertRole(ctx, roleName)
 		if err != nil {
@@ -114,7 +125,7 @@ func (p *PermissionsManager) AddRoleWithPermissions(ctx context.Context, roleNam
 			return err
 		}
 
-		err = p.queriesInsertPermissionSet(ctx, q, perms)
+		err = QueriesInsertPermissionSet(ctx, q, perms)
 		if err != nil {
 			return err
 		}
