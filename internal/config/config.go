@@ -53,35 +53,35 @@ func NewConfigMgr(pool *pgxpool.Pool, fileName string) (*ConfigMgr, error) {
 	return &ConfigMgr{Base: base, Pipelines: pipelines, Roles: roles, store: store.NewStore(pool)}, nil
 }
 
+// TODO: add deleting roles connected to a user.
+// sync roles from config. Deletes roles not listed in the config and not asigned to any users.
 func (c *ConfigMgr) SyncRoles(ctx context.Context) error {
 	confNames := make(map[string]struct{})
 	for _, role := range c.Roles {
 		confNames[role.name] = struct{}{}
-		if err := c.syncRoleQueries(ctx, role); err != nil {
+		if err := c.syncRole(ctx, role); err != nil {
 			return err
 		}
 	}
 
-	namesArr, err := c.store.Queries.GetRoleNames(ctx)
+	rolesArr, err := c.store.Queries.GetUnusedRoles(ctx)
 	if err != nil {
 		return err
 	}
 
-	allNames := make(map[string]struct{})
-	for _, name := range namesArr {
-		allNames[name] = struct{}{}
-	}
-
-	for name, _ := range allNames {
-		if _, ok := confNames[name]; !ok {
-			err := c.store.Queries.DeleteRoleByName(ctx, name)
-			return err
+	for _, role := range rolesArr {
+		if _, ok := confNames[role.Name]; !ok {
+			err := c.store.Queries.DeleteRoleByName(ctx, role.Name)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
-func (c *ConfigMgr) syncRoleQueries(ctx context.Context, role RoleConfig) error {
+// sync a single role.
+func (c *ConfigMgr) syncRole(ctx context.Context, role RoleConfig) error {
 	permissionSets := make(map[string]permissions.PermissionSet, len(role.perms))
 	for _, perm := range role.perms {
 		set, ok := permissionSets[perm.context]
@@ -128,6 +128,7 @@ func (c *ConfigMgr) syncRoleQueries(ctx context.Context, role RoleConfig) error 
 	return c.store.ExecTx(ctx, queryFn)
 }
 
+// Sync pipeline stage definitions.
 func (c *ConfigMgr) syncStageQueriesGetId(ctx context.Context, q *db.Queries, stage PipelineStage) (int64, error) {
 	version, err := stage.JSON()
 	if err != nil {
@@ -161,6 +162,10 @@ func (c *ConfigMgr) syncStageQueriesGetId(ctx context.Context, q *db.Queries, st
 	return retStage.ID, nil
 }
 
+// Sync pipelines to the DB. Inserts pipelines if a new one has been defined or old one modified.
+// Deletes pipelines which are not referenced by any submissions and are not the current state of
+// any of the configured pipelines.
+// TODO: delete unused pipelines
 func (c *ConfigMgr) SyncPipelines(ctx context.Context) error {
 	queryFn := func(q *db.Queries) error {
 		for _, p := range c.Pipelines {
@@ -217,4 +222,18 @@ func (c *ConfigMgr) SyncPipelines(ctx context.Context) error {
 	}
 
 	return c.store.ExecTx(ctx, queryFn)
+}
+
+func (c *ConfigMgr) SyncAll(ctx context.Context) error {
+	err := c.SyncRoles(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = c.SyncPipelines(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

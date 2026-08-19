@@ -29,3 +29,12 @@ WHERE rp.role_id = $1;
 -- name: DeleteRoleByName :exec
 DELETE FROM roles
 WHERE name = $1;
+
+-- name: GetUnusedRoles :many
+SELECT r.*
+FROM roles r
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM user_roles ur
+    WHERE r.id = ur.role_id
+);

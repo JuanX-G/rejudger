@@ -67,16 +67,6 @@ func (p *PermissionsManager) InsertPermissionSet(ctx context.Context, set Permis
 	return p.store.ExecTx(ctx, queryFn)
 }
 
-func QueriesInsertPermissionSet(ctx context.Context, q *db.Queries, set PermissionSet) error {
-	for k := range set.Permissions {
-		err := q.InsertPermission(ctx, db.InsertPermissionParams{Context: set.Context, Action: k.String()})
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (p *PermissionsManager) DeletePermission(ctx context.Context, context string, action ActionPermission) error {
 	return p.store.Queries.DeletePermission(ctx, db.DeletePermissionParams{Context: context, Action: action.String()})
 }

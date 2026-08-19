@@ -111,6 +111,36 @@ func (q *Queries) GetRolePermissions(ctx context.Context, roleID int32) ([]Permi
 	return items, nil
 }
 
+const getUnusedRoles = `-- name: GetUnusedRoles :many
+SELECT r.id, r.name
+FROM roles r
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM user_roles ur
+    WHERE r.id = ur.role_id
+)
+`
+
+func (q *Queries) GetUnusedRoles(ctx context.Context) ([]Role, error) {
+	rows, err := q.db.Query(ctx, getUnusedRoles)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Role
+	for rows.Next() {
+		var i Role
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const insertRole = `-- name: InsertRole :exec
 INSERT INTO roles (name)
 VALUES ($1) RETURNING id, name
