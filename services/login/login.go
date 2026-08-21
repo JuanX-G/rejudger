@@ -7,22 +7,20 @@ import (
 	"revit/internal/jsonHelpers"
 	"revit/internal/passwords"
 	"revit/internal/permissions"
-	"revit/internal/store"
 	"revit/services/auth"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type LoginManager struct {
 	authService    *auth.AuthManager
-	store          store.Store
-	permissionsMgr *permissions.PermissionsManager
+	store          loginStore
+	permissionsMgr permissions.PermissionsManager
 }
 
-func NewLoginManager(ctx context.Context, pool *pgxpool.Pool, authService *auth.AuthManager, permissionMgr *permissions.PermissionsManager) (*LoginManager, error) {
-	return &LoginManager{authService: authService, store: store.NewStore(pool), permissionsMgr: permissionMgr}, nil
+func NewLoginManager(ctx context.Context, queries loginStore, authService *auth.AuthManager, permissionMgr permissions.PermissionsManager) (*LoginManager, error) {
+	return &LoginManager{authService: authService, store: queries, permissionsMgr: permissionMgr}, nil
 }
 
 func (l *LoginManager) RegisterRoutes(mux *http.ServeMux) {
@@ -58,7 +56,7 @@ func (l *LoginManager) LoginHandler() http.HandlerFunc {
 		var userName string
 		if body.Email != "" {
 			text := pgtype.Text{String: body.Email, Valid: true}
-			data, err := l.store.GetQueries().GetBasicInfoByEmail(ctx, text)
+			data, err := l.store.GetBasicInfoByEmail(ctx, text)
 			if err != nil {
 				jsonHelpers.WriteJSON(w, http.StatusInternalServerError, LoginResponse{Success: false})
 				return
@@ -67,7 +65,7 @@ func (l *LoginManager) LoginHandler() http.HandlerFunc {
 			id = int(data.ID)
 			userName = data.Name
 		} else if body.UserName != "" {
-			data, err := l.store.GetQueries().GetBasicInfoByUserName(ctx, body.UserName)
+			data, err := l.store.GetBasicInfoByUserName(ctx, body.UserName)
 			if err != nil {
 				jsonHelpers.WriteJSON(w, http.StatusInternalServerError, LoginResponse{Success: false})
 				return
