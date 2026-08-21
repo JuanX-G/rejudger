@@ -8,17 +8,32 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type PermissionsManager struct {
+type PermissionsManager interface {
+	GetUserPermissions(userId int) ([]PermissionSet, error)
+	InsertPermission(ctx context.Context, context string, action ActionPermission) error
+	InsertPermissionSet(ctx context.Context, set PermissionSet) error
+	DeletePermission(ctx context.Context, context string, action ActionPermission) error
+	DeletePermissionContext(ctx context.Context, context string) error
+	InsertRole(ctx context.Context, name string) error
+	GetRoleByName(ctx context.Context, name string) (db.Role, error)
+
+	AddPermissionToRole(ctx context.Context, permissionID int32, roleID int32) error
+	GetPermissionId(ctx context.Context, context string, action ActionPermission) (int, error)
+	GetExecTx() func(context.Context, func(*db.Queries) error) error
+	AddRoleWithPermissions(ctx context.Context, roleName string, perms PermissionSet) error
+}
+
+type BasePermissionsManager struct {
 	db    *pgxpool.Pool
 	store store.Store
 	ctx   context.Context
 }
 
-func NewPermissionManager(ctx context.Context, pool *pgxpool.Pool) (*PermissionsManager, error) {
-	return &PermissionsManager{db: pool, store: store.NewStore(pool), ctx: ctx}, nil
+func NewPermissionManager(ctx context.Context, pool *pgxpool.Pool) (*BasePermissionsManager, error) {
+	return &BasePermissionsManager{db: pool, store: store.NewStore(pool), ctx: ctx}, nil
 }
 
-func (p *PermissionsManager) GetUserPermissions(userId int) ([]PermissionSet, error) {
+func (p *BasePermissionsManager) GetUserPermissions(userId int) ([]PermissionSet, error) {
 	perms, err := p.store.GetQueries().GetUserPermissions(p.ctx, int64(userId))
 	if err != nil {
 		return []PermissionSet{}, err
@@ -50,11 +65,11 @@ func (p *PermissionsManager) GetUserPermissions(userId int) ([]PermissionSet, er
 	return result, nil
 }
 
-func (p *PermissionsManager) InsertPermission(ctx context.Context, context string, action ActionPermission) error {
+func (p *BasePermissionsManager) InsertPermission(ctx context.Context, context string, action ActionPermission) error {
 	return p.store.GetQueries().InsertPermission(ctx, db.InsertPermissionParams{Context: context, Action: action.String()})
 }
 
-func (p *PermissionsManager) InsertPermissionSet(ctx context.Context, set PermissionSet) error {
+func (p *BasePermissionsManager) InsertPermissionSet(ctx context.Context, set PermissionSet) error {
 	queryFn := func(q *db.Queries) error {
 		for k := range set.Permissions {
 			err := q.InsertPermission(ctx, db.InsertPermissionParams{Context: set.Context, Action: k.String()})
@@ -67,19 +82,19 @@ func (p *PermissionsManager) InsertPermissionSet(ctx context.Context, set Permis
 	return p.store.ExecTx(ctx, queryFn)
 }
 
-func (p *PermissionsManager) DeletePermission(ctx context.Context, context string, action ActionPermission) error {
+func (p *BasePermissionsManager) DeletePermission(ctx context.Context, context string, action ActionPermission) error {
 	return p.store.GetQueries().DeletePermission(ctx, db.DeletePermissionParams{Context: context, Action: action.String()})
 }
 
-func (p *PermissionsManager) DeletePermissionContext(ctx context.Context, context string) error {
+func (p *BasePermissionsManager) DeletePermissionContext(ctx context.Context, context string) error {
 	return p.store.GetQueries().DeletePermissionContext(ctx, context)
 }
 
-func (p *PermissionsManager) InsertRole(ctx context.Context, name string) error {
+func (p *BasePermissionsManager) InsertRole(ctx context.Context, name string) error {
 	return p.store.GetQueries().InsertRole(ctx, name)
 }
 
-func (p *PermissionsManager) GetRoleByName(ctx context.Context, name string) (db.Role, error) {
+func (p *BasePermissionsManager) GetRoleByName(ctx context.Context, name string) (db.Role, error) {
 	role, err := p.store.GetQueries().GetRoleByName(ctx, name)
 	if err != nil {
 		return db.Role{}, err
@@ -87,11 +102,11 @@ func (p *PermissionsManager) GetRoleByName(ctx context.Context, name string) (db
 	return role, nil
 }
 
-func (p *PermissionsManager) AddPermissionToRole(ctx context.Context, permissionID int32, roleID int32) error {
+func (p *BasePermissionsManager) AddPermissionToRole(ctx context.Context, permissionID int32, roleID int32) error {
 	return p.store.GetQueries().AddPermissionToRole(ctx, db.AddPermissionToRoleParams{PermissionID: permissionID, RoleID: roleID})
 }
 
-func (p *PermissionsManager) GetPermissionId(ctx context.Context, context string, action ActionPermission) (int, error) {
+func (p *BasePermissionsManager) GetPermissionId(ctx context.Context, context string, action ActionPermission) (int, error) {
 	id, err := p.store.GetQueries().GetPermissionId(ctx, db.GetPermissionIdParams{Context: context, Action: action.String()})
 	if err != nil {
 		return -1, err
@@ -99,11 +114,11 @@ func (p *PermissionsManager) GetPermissionId(ctx context.Context, context string
 	return int(id), nil
 }
 
-func (p *PermissionsManager) GetExecTx() func(context.Context, func(*db.Queries) error) error {
+func (p *BasePermissionsManager) GetExecTx() func(context.Context, func(*db.Queries) error) error {
 	return p.store.ExecTx
 }
 
-func (p *PermissionsManager) AddRoleWithPermissions(ctx context.Context, roleName string, perms PermissionSet) error {
+func (p *BasePermissionsManager) AddRoleWithPermissions(ctx context.Context, roleName string, perms PermissionSet) error {
 	queryFn := func(q *db.Queries) error {
 		err := q.InsertRole(ctx, roleName)
 		if err != nil {
