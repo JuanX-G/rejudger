@@ -1,2 +1,0 @@
-/internal/permissions;
-/internal/config;
