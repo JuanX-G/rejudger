@@ -57,15 +57,17 @@ type Stage struct {
 type Submission struct {
 	ID        int64
 	CreatedAt pgtype.Timestamp
-	Content   pgtype.Text
+	Content   string
 	Author    int64
 	Hash      string
 }
 
 type SubmissionArtifact struct {
-	ID           int32
+	ID           int64
+	Hash         string
+	Name         string
+	Generation   int32
 	SubmissionID int64
-	ArtifactUrl  string
 	FileType     string
 	UploadedAt   pgtype.Timestamp
 }

@@ -14,6 +14,10 @@ WHERE name = $1 LIMIT 1;
 SELECT * FROM users
 WHERE internal_id = $1 LIMIT 1;
 
+-- name: GetUserById :one
+SELECT * FROM users
+WHERE id = $1;
+
 -- name: GetBasicInfoByUserName :one
 SELECT password, id, name FROM users
 WHERE name = $1 LIMIT 1;

@@ -1,7 +1,7 @@
 CREATE TABLE submissions (
     id BIGSERIAL PRIMARY KEY,
     created_at TIMESTAMP DEFAULT NOW(),
-    content TEXT,
+    content TEXT NOT NULL,
     author BIGINT NOT NULL REFERENCES users(id),
     hash VARCHAR(128) NOT NULL UNIQUE
 );
@@ -15,11 +15,15 @@ CREATE TABLE plus_ones (
 );
 
 CREATE TABLE submission_artifacts (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
+    hash VARCHAR(128) NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    generation SERIAL NOT NULL,
     submission_id BIGINT NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
-    artifact_url TEXT NOT NULL,
     file_type TEXT NOT NULL,
-    uploaded_at TIMESTAMP DEFAULT NOW()
+    uploaded_at TIMESTAMP DEFAULT NOW(),
+
+    UNIQUE(hash, generation)
 );
 
 CREATE INDEX idx_artifacts_submission_id ON submission_artifacts(submission_id);

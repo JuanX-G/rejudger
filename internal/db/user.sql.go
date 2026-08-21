@@ -75,6 +75,24 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email pgtype.Text) (User, 
 	return i, err
 }
 
+const getUserById = `-- name: GetUserById :one
+SELECT id, name, internal_id, password, email FROM users
+WHERE id = $1
+`
+
+func (q *Queries) GetUserById(ctx context.Context, id int64) (User, error) {
+	row := q.db.QueryRow(ctx, getUserById, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.InternalID,
+		&i.Password,
+		&i.Email,
+	)
+	return i, err
+}
+
 const getUserByInternalId = `-- name: GetUserByInternalId :one
 SELECT id, name, internal_id, password, email FROM users
 WHERE internal_id = $1 LIMIT 1

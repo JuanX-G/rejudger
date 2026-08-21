@@ -7,8 +7,6 @@ package db
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const addPlusOne = `-- name: AddPlusOne :exec
@@ -38,6 +36,37 @@ func (q *Queries) CountPlusOnes(ctx context.Context, submissionID int64) (int64,
 	return count, err
 }
 
+const deleteArtifact = `-- name: DeleteArtifact :exec
+DELETE FROM submission_artifacts
+WHERE hash = $1 AND file_type = $2
+`
+
+type DeleteArtifactParams struct {
+	Hash     string
+	FileType string
+}
+
+func (q *Queries) DeleteArtifact(ctx context.Context, arg DeleteArtifactParams) error {
+	_, err := q.db.Exec(ctx, deleteArtifact, arg.Hash, arg.FileType)
+	return err
+}
+
+const deleteArtifactByGen = `-- name: DeleteArtifactByGen :exec
+SELECT id, hash, name, generation, submission_id, file_type, uploaded_at FROM submission_artifacts
+WHERE hash = $1 AND file_type = $2 AND generation = $3
+`
+
+type DeleteArtifactByGenParams struct {
+	Hash       string
+	FileType   string
+	Generation int32
+}
+
+func (q *Queries) DeleteArtifactByGen(ctx context.Context, arg DeleteArtifactByGenParams) error {
+	_, err := q.db.Exec(ctx, deleteArtifactByGen, arg.Hash, arg.FileType, arg.Generation)
+	return err
+}
+
 const deletePlusOne = `-- name: DeletePlusOne :exec
 DELETE FROM plus_ones WHERE user_id = $1 AND submission_id = $2
 `
@@ -50,6 +79,171 @@ type DeletePlusOneParams struct {
 func (q *Queries) DeletePlusOne(ctx context.Context, arg DeletePlusOneParams) error {
 	_, err := q.db.Exec(ctx, deletePlusOne, arg.UserID, arg.SubmissionID)
 	return err
+}
+
+const existsArtifact = `-- name: ExistsArtifact :one
+SELECT EXISTS(SELECT 1 FROM submission_artifacts WHERE hash = $1 AND file_type = $2)
+`
+
+type ExistsArtifactParams struct {
+	Hash     string
+	FileType string
+}
+
+func (q *Queries) ExistsArtifact(ctx context.Context, arg ExistsArtifactParams) (bool, error) {
+	row := q.db.QueryRow(ctx, existsArtifact, arg.Hash, arg.FileType)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const existsArtifactRev = `-- name: ExistsArtifactRev :one
+SELECT EXISTS(SELECT 1 FROM submission_artifacts WHERE hash = $1 AND file_type = $2 AND generation = $3)
+`
+
+type ExistsArtifactRevParams struct {
+	Hash       string
+	FileType   string
+	Generation int32
+}
+
+func (q *Queries) ExistsArtifactRev(ctx context.Context, arg ExistsArtifactRevParams) (bool, error) {
+	row := q.db.QueryRow(ctx, existsArtifactRev, arg.Hash, arg.FileType, arg.Generation)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const getArtifactByGeneration = `-- name: GetArtifactByGeneration :one
+SELECT id, hash, name, generation, submission_id, file_type, uploaded_at FROM submission_artifacts
+WHERE hash = $1 AND file_type = $2 AND generation = $3
+`
+
+type GetArtifactByGenerationParams struct {
+	Hash       string
+	FileType   string
+	Generation int32
+}
+
+func (q *Queries) GetArtifactByGeneration(ctx context.Context, arg GetArtifactByGenerationParams) (SubmissionArtifact, error) {
+	row := q.db.QueryRow(ctx, getArtifactByGeneration, arg.Hash, arg.FileType, arg.Generation)
+	var i SubmissionArtifact
+	err := row.Scan(
+		&i.ID,
+		&i.Hash,
+		&i.Name,
+		&i.Generation,
+		&i.SubmissionID,
+		&i.FileType,
+		&i.UploadedAt,
+	)
+	return i, err
+}
+
+const getArtifacts = `-- name: GetArtifacts :many
+SELECT id, hash, name, generation, submission_id, file_type, uploaded_at FROM submission_artifacts
+WHERE hash = $1 AND file_type = $2
+ORDER BY generation DESC
+`
+
+type GetArtifactsParams struct {
+	Hash     string
+	FileType string
+}
+
+func (q *Queries) GetArtifacts(ctx context.Context, arg GetArtifactsParams) ([]SubmissionArtifact, error) {
+	rows, err := q.db.Query(ctx, getArtifacts, arg.Hash, arg.FileType)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SubmissionArtifact
+	for rows.Next() {
+		var i SubmissionArtifact
+		if err := rows.Scan(
+			&i.ID,
+			&i.Hash,
+			&i.Name,
+			&i.Generation,
+			&i.SubmissionID,
+			&i.FileType,
+			&i.UploadedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getArtifactsBySubmission = `-- name: GetArtifactsBySubmission :many
+SELECT id, hash, name, generation, submission_id, file_type, uploaded_at FROM submission_artifacts
+WHERE hash = $1 AND file_type = $2 AND submission_id = $3
+ORDER BY generation DESC
+`
+
+type GetArtifactsBySubmissionParams struct {
+	Hash         string
+	FileType     string
+	SubmissionID int64
+}
+
+func (q *Queries) GetArtifactsBySubmission(ctx context.Context, arg GetArtifactsBySubmissionParams) ([]SubmissionArtifact, error) {
+	rows, err := q.db.Query(ctx, getArtifactsBySubmission, arg.Hash, arg.FileType, arg.SubmissionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SubmissionArtifact
+	for rows.Next() {
+		var i SubmissionArtifact
+		if err := rows.Scan(
+			&i.ID,
+			&i.Hash,
+			&i.Name,
+			&i.Generation,
+			&i.SubmissionID,
+			&i.FileType,
+			&i.UploadedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getNewestArtifact = `-- name: GetNewestArtifact :one
+SELECT id, hash, name, generation, submission_id, file_type, uploaded_at FROM submission_artifacts
+WHERE hash = $1 AND file_type = $2
+ORDER BY generation DESC
+LIMIT 1
+`
+
+type GetNewestArtifactParams struct {
+	Hash     string
+	FileType string
+}
+
+func (q *Queries) GetNewestArtifact(ctx context.Context, arg GetNewestArtifactParams) (SubmissionArtifact, error) {
+	row := q.db.QueryRow(ctx, getNewestArtifact, arg.Hash, arg.FileType)
+	var i SubmissionArtifact
+	err := row.Scan(
+		&i.ID,
+		&i.Hash,
+		&i.Name,
+		&i.Generation,
+		&i.SubmissionID,
+		&i.FileType,
+		&i.UploadedAt,
+	)
+	return i, err
 }
 
 const getSubmissionsByAuthor = `-- name: GetSubmissionsByAuthor :many
@@ -154,13 +348,35 @@ func (q *Queries) GetUnusedPipelines(ctx context.Context) ([]Pipeline, error) {
 	return items, nil
 }
 
+const insertArtifact = `-- name: InsertArtifact :exec
+INSERT INTO submission_artifacts (hash, name, submission_id, file_type)
+VALUES ($1, $2, $3, $4)
+`
+
+type InsertArtifactParams struct {
+	Hash         string
+	Name         string
+	SubmissionID int64
+	FileType     string
+}
+
+func (q *Queries) InsertArtifact(ctx context.Context, arg InsertArtifactParams) error {
+	_, err := q.db.Exec(ctx, insertArtifact,
+		arg.Hash,
+		arg.Name,
+		arg.SubmissionID,
+		arg.FileType,
+	)
+	return err
+}
+
 const insertSubmission = `-- name: InsertSubmission :exec
 INSERT INTO submissions (content, author, hash)
 VALUES ($1, $2, $3)
 `
 
 type InsertSubmissionParams struct {
-	Content pgtype.Text
+	Content string
 	Author  int64
 	Hash    string
 }
