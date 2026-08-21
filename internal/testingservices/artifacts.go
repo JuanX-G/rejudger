@@ -7,11 +7,25 @@ import (
 	"revit/internal/artifactmanager"
 )
 
+type ExpectedMsg struct {
+	Hashes         []string
+	SubmissionHash string
+	SubmissionId   int64
+}
+
 type MockArtifactService struct {
-	store MockArtifactStore
+	store             *MockArtifactStore
+	ExpectedArtifacts chan ExpectedMsg
 }
 
 func (as *MockArtifactService) ExpectArtifacts(hashes []string, submissionHash string, submissionId int64) {
+	if as.ExpectedArtifacts != nil {
+		as.ExpectedArtifacts <- ExpectedMsg{Hashes: hashes, SubmissionHash: submissionHash, SubmissionId: submissionId}
+	}
+}
+
+func NewMockArtifactService(st *MockArtifactStore) *MockArtifactService {
+	return &MockArtifactService{store: st}
 }
 
 type MockArtifact struct {
@@ -67,4 +81,8 @@ func (as *MockArtifactStore) Exists(ctx context.Context, fileType artifactmanage
 	} else {
 		return artifactmanager.ErrArtifactDoesNotExist
 	}
+}
+
+func (as *MockArtifactStore) GetRawContents() MockArtifact {
+	return as.art
 }

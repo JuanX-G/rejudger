@@ -62,13 +62,13 @@ func (s *SubmissionService) HandleSubmission() http.HandlerFunc {
 			jsonHelpers.WriteJSON(w, http.StatusInternalServerError, SubmissionResponse{Success: false})
 			return
 		}
-		subm, err := s.store.GetSubmissionsByHash(ctx, hash)
+		submission, err := s.store.GetSubmissionsByHash(ctx, hash)
 		if err != nil {
 			jsonHelpers.WriteJSON(w, http.StatusInternalServerError, SubmissionResponse{Success: false})
 			return
 		}
 
-		s.artifacts.ExpectArtifacts(query.Hashes, hash, subm.ID)
+		s.artifacts.ExpectArtifacts(query.Hashes, hash, submission.ID)
 		jsonHelpers.WriteJSON(w, http.StatusOK, SubmissionResponse{Success: true, Hash: hash})
 	}
 }
