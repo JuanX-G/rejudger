@@ -48,12 +48,6 @@ func (as *MockArtifactStore) Put(ctx context.Context, meta artifactmanager.Artif
 	return nil
 }
 
-const DEFAULT_OBJECT = "object"
-const DEFAULT_OBJECT_HASH = "ohash"
-const DEFAULT_OBJECT_NAME = "oname"
-
-var DEFAULT_OBJECT_METADATA = artifactmanager.ArtifactMetadata{FileType: artifactmanager.ArtifactJPG, BaseHash: DEFAULT_OBJECT_HASH, Name: DEFAULT_OBJECT_NAME}
-
 func (as *MockArtifactStore) Get(ctx context.Context, fileType artifactmanager.ArtifactFileType, hash string, rev int32) (io.ReadCloser, error) {
 	if as.full {
 		return io.NopCloser(bytes.NewReader(as.art.Bytes)), nil
