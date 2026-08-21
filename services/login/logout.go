@@ -19,6 +19,7 @@ func (l *LoginManager) LogoutHandler() http.HandlerFunc {
 			jsonHelpers.WriteJSON(w, http.StatusBadRequest, logoutResponse{Success: false, Message: "token not included"})
 			return
 		}
+		defer r.Body.Close()
 		if err := l.authService.DeleteToken(token); err != nil {
 			if ok := errors.Is(err, auth.ErrorNoSuchSession); ok {
 				jsonHelpers.WriteJSON(w, http.StatusBadRequest, logoutResponse{Success: false, Message: "token not found"})

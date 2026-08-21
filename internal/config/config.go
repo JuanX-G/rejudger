@@ -19,7 +19,7 @@ type ConfigMgr struct {
 	Base      *BaseConfig
 	Pipelines []Pipeline
 	Roles     []RoleConfig
-	store     *store.Store
+	store     store.Store
 }
 
 func NewConfigMgr(pool *pgxpool.Pool, fileName string) (*ConfigMgr, error) {
@@ -64,14 +64,14 @@ func (c *ConfigMgr) SyncRoles(ctx context.Context) error {
 		}
 	}
 
-	rolesArr, err := c.store.Queries.GetUnusedRoles(ctx)
+	rolesArr, err := c.store.GetQueries().GetUnusedRoles(ctx)
 	if err != nil {
 		return err
 	}
 
 	for _, role := range rolesArr {
 		if _, ok := confNames[role.Name]; !ok {
-			err := c.store.Queries.DeleteRoleByName(ctx, role.Name)
+			err := c.store.GetQueries().DeleteRoleByName(ctx, role.Name)
 			if err != nil {
 				return err
 			}

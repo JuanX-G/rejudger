@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"revit/internal/permissions"
 	"revit/internal/customSync"
+	"revit/internal/permissions"
 	"sync"
 	"time"
 )
@@ -12,7 +12,7 @@ import (
 // Because of frequest insertions it uses Mutex + Map instead of sync.Map.
 // It is safe for any goroutines to access its fields and perform actions using the provided methods.
 type AuthManager struct {
-	mu sync.RWMutex
+	mu       sync.RWMutex
 	sessions map[string]*customSync.PointerLock[Session] //map a token (string) to session info
 }
 
@@ -35,7 +35,7 @@ func (a *AuthManager) getSessionLock(token string) (*customSync.PointerLock[Sess
 	return s, nil
 }
 
-func (a *AuthManager) DeleteToken(token string) (error) {
+func (a *AuthManager) DeleteToken(token string) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	_, found := a.sessions[token]
@@ -67,7 +67,6 @@ func (a *AuthManager) NewSession(expiryDur int, userId int, userName string, per
 	a.sessions[token] = sessionPtr
 	return token, nil
 }
-
 
 func (a *AuthManager) rotateToken(originalToken string) (string, error) {
 	var newToken string
@@ -103,7 +102,6 @@ func (a *AuthManager) UpdateSessionPerms(token string, perms permissions.Permiss
 	sessionPtr.WithWritePointer(updateSessionPermsCallback)
 	return nil
 }
-
 
 func (a *AuthManager) HasPermission(token string, context string, required permissions.ActionPermission) error {
 	session, err := a.getSessionLock(token)
@@ -147,7 +145,6 @@ func (a *AuthManager) IsValid(token string) error {
 		}
 	})
 
-
 	return verifyErr
 }
 
@@ -180,4 +177,16 @@ func (a *AuthManager) HasAllPermissions(token string, context string, required .
 	})
 
 	return verifyErr
+}
+
+func (a *AuthManager) GetUserId(token string) (int64, error) {
+	session, err := a.getSessionLock(token)
+	if err != nil {
+		return 0, err
+	}
+	var userId int64
+	session.WithReadPointer(func(s *Session) {
+		userId = int64(s.UserId)
+	})
+	return userId, nil
 }

@@ -16,8 +16,8 @@ import (
 )
 
 type LoginManager struct {
-	authService *auth.AuthManager
-	store *store.Store
+	authService    *auth.AuthManager
+	store          store.Store
 	permissionsMgr *permissions.PermissionsManager
 }
 
@@ -32,22 +32,23 @@ func (l *LoginManager) RegisterRoutes(mux *http.ServeMux) {
 
 type LoginQuery struct {
 	Password string `json:"password"`
-	Email string `json:"email"`
+	Email    string `json:"email"`
 	UserName string `json:"user_name"`
 }
 
 type LoginResponse struct {
-	Success bool `json:"sucess"`
-	Token string `json:"token"`
+	Success bool   `json:"sucess"`
+	Token   string `json:"token"`
 }
 
 func (l *LoginManager) LoginHandler() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(r.Context(), time.Second * 10)
+		ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
 		defer cancel()
 
 		var body LoginQuery
 		_, err := httpHelpers.RequestJsonToStruct(r, &body)
+		defer r.Body.Close()
 		if err != nil {
 			jsonHelpers.WriteJSON(w, http.StatusBadRequest, LoginResponse{Success: false})
 			return
@@ -57,7 +58,7 @@ func (l *LoginManager) LoginHandler() http.HandlerFunc {
 		var userName string
 		if body.Email != "" {
 			text := pgtype.Text{String: body.Email, Valid: true}
-			data, err := l.store.Queries.GetBasicInfoByEmail(ctx, text)
+			data, err := l.store.GetQueries().GetBasicInfoByEmail(ctx, text)
 			if err != nil {
 				jsonHelpers.WriteJSON(w, http.StatusInternalServerError, LoginResponse{Success: false})
 				return
@@ -66,7 +67,7 @@ func (l *LoginManager) LoginHandler() http.HandlerFunc {
 			id = int(data.ID)
 			userName = data.Name
 		} else if body.UserName != "" {
-			data, err := l.store.Queries.GetBasicInfoByUserName(ctx, body.UserName)
+			data, err := l.store.GetQueries().GetBasicInfoByUserName(ctx, body.UserName)
 			if err != nil {
 				jsonHelpers.WriteJSON(w, http.StatusInternalServerError, LoginResponse{Success: false})
 				return
@@ -75,8 +76,8 @@ func (l *LoginManager) LoginHandler() http.HandlerFunc {
 			id = int(data.ID)
 			userName = data.Name
 		} else {
-				jsonHelpers.WriteJSON(w, http.StatusBadRequest, LoginResponse{Success: false})
-				return
+			jsonHelpers.WriteJSON(w, http.StatusBadRequest, LoginResponse{Success: false})
+			return
 		}
 
 		ok, err := passwords.VerifyPassword(pass, body.Password)
