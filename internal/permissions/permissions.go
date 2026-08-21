@@ -8,8 +8,8 @@ type ActionPermission int
 
 //go:generate stringer -type=ActionPermission -trimprefix=Permission
 const (
-    PermissionPlusOne ActionPermission = iota
-    PermissionSoftVeto
+	PermissionPlusOne ActionPermission = iota
+	PermissionSoftVeto
 	PermissionHardVeto
 	PermissionView
 	PermissionSubmit
@@ -37,11 +37,13 @@ func ParseActionPermission(s string) (ActionPermission, error) {
 }
 
 type PermissionSet struct {
-	Context string
+	Context     string
 	Permissions map[ActionPermission]struct{}
 }
 
+//go:generate stringer -type=PermissionConfigErrorType -trimprefix=Permission
 type PermissionConfigErrorType int
+
 const (
 	PermissionConfigErrorInvalidString PermissionConfigErrorType = iota
 	PermissionConfigErrorInvalidPermissionSet
@@ -49,7 +51,7 @@ const (
 )
 
 type PermissionConfigError struct {
-	errType PermissionConfigErrorType
+	errType       PermissionConfigErrorType
 	customMessage string
 }
 
