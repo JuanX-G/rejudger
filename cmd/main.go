@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"revit/internal/db"
 	"revit/internal/permissions"
 	"revit/services/auth"
 	"revit/services/login"
-	"revit/services/userManagment"
+	userManagmentService "revit/services/userManagment"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -25,7 +26,7 @@ func main() {
 		fmt.Println("Err: ", err)
 	}
 
-	loginMgr, err := login.NewLoginManager(ctx, pool, authMgr, permissionMgr)
+	loginMgr, err := login.NewLoginManager(ctx, db.New(pool), authMgr, permissionMgr)
 	if err != nil {
 		fmt.Println("Err: ", err)
 	}
