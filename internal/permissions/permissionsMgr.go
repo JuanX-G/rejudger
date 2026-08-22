@@ -37,7 +37,7 @@ type BasePermissionsManager struct {
 	ctx     context.Context
 }
 
-func NewPermissionManager(ctx context.Context, queries *db.Queries) (*BasePermissionsManager, error) {
+func NewPermissionManager(ctx context.Context, queries basePermissionMgrStore) (*BasePermissionsManager, error) {
 	return &BasePermissionsManager{store: queries, ctx: ctx}, nil
 }
 

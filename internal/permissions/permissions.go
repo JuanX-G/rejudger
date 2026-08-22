@@ -8,13 +8,13 @@ type ActionPermission int
 
 //go:generate stringer -type=ActionPermission -trimprefix=Permission
 const (
-	PermissionPlusOne ActionPermission = iota
+	PermissionUnknownAction ActionPermission = iota
+	PermissionPlusOne
 	PermissionSoftVeto
 	PermissionHardVeto
 	PermissionView
 	PermissionSubmit
 	PermissionWrite
-	PermissionUnknownAction
 )
 
 func ParseActionPermission(s string) (ActionPermission, error) {
