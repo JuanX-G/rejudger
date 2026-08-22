@@ -21,7 +21,7 @@ func main() {
 	}
 
 	authMgr := auth.NewAuthManager()
-	permissionMgr, err := permissions.NewPermissionManager(ctx, pool)
+	permissionMgr, err := permissions.NewPermissionManager(ctx, db.New(pool))
 	if err != nil {
 		fmt.Println("Err: ", err)
 	}
