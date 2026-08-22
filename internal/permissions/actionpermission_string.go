@@ -8,18 +8,18 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[PermissionPlusOne-0]
-	_ = x[PermissionSoftVeto-1]
-	_ = x[PermissionHardVeto-2]
-	_ = x[PermissionView-3]
-	_ = x[PermissionSubmit-4]
-	_ = x[PermissionWrite-5]
-	_ = x[PermissionUnknownAction-6]
+	_ = x[PermissionUnknownAction-0]
+	_ = x[PermissionPlusOne-1]
+	_ = x[PermissionSoftVeto-2]
+	_ = x[PermissionHardVeto-3]
+	_ = x[PermissionView-4]
+	_ = x[PermissionSubmit-5]
+	_ = x[PermissionWrite-6]
 }
 
-const _ActionPermission_name = "PlusOneSoftVetoHardVetoViewSubmitWriteUnknownAction"
+const _ActionPermission_name = "UnknownActionPlusOneSoftVetoHardVetoViewSubmitWrite"
 
-var _ActionPermission_index = [...]uint8{0, 7, 15, 23, 27, 33, 38, 51}
+var _ActionPermission_index = [...]uint8{0, 13, 20, 28, 36, 40, 46, 51}
 
 func (i ActionPermission) String() string {
 	idx := int(i) - 0
