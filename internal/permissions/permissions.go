@@ -4,17 +4,18 @@ import (
 	"strings"
 )
 
+//go:generate stringer -type=ActionPermission -trimprefix=Permission
 type ActionPermission int
 
-//go:generate stringer -type=ActionPermission -trimprefix=Permission
+// Posssible permission for a single appContext.
 const (
-	PermissionUnknownAction ActionPermission = iota
-	PermissionPlusOne
-	PermissionSoftVeto
-	PermissionHardVeto
-	PermissionView
-	PermissionSubmit
-	PermissionWrite
+	PermissionUnknownAction ActionPermission = iota // Invalid state, arises when parsing external strings into permissions
+	PermissionPlusOne                               // Permission to approve a submission
+	PermissionSoftVeto                              // Permission to soft-veto a submission
+	PermissionHardVeto                              // Permission to hard-veto a submission
+	PermissionView                                  // Permission to view all submissions
+	PermissionSubmit                                // Permission to make submissions
+	PermissionWrite                                 // Permission to write to shared resources and configurations in the context
 )
 
 // Parse a permission name as string to a type.
@@ -37,14 +38,16 @@ func ParseActionPermission(s string) (ActionPermission, error) {
 	}
 }
 
+// Struct representing a set of permisions for a certain context in the app.
 type PermissionSet struct {
-	Context     string
-	Permissions map[ActionPermission]struct{}
+	Context     string                        // Application context where such permissions hold
+	Permissions map[ActionPermission]struct{} // The permisions held
 }
 
 //go:generate stringer -type=PermissionConfigErrorType -trimprefix=Permission
 type PermissionConfigErrorType int
 
+// Possible errors when parsing the string representation of permissions.
 const (
 	PermissionConfigErrorInvalidString PermissionConfigErrorType = iota
 	PermissionConfigErrorInvalidPermissionSet
@@ -69,6 +72,8 @@ func (p PermissionConfigError) Error() string {
 	}
 }
 
+// Make a new permission from a string. Format: <AppContext>::<Permission-list>.
+// The Permission-list should be separated by ',' and can include spaces.
 func NewPermissionSetFromString(s string) (PermissionSet, error) {
 	parts := strings.Split(s, "::")
 	if len(parts) != 2 {
@@ -88,8 +93,9 @@ func NewPermissionSetFromString(s string) (PermissionSet, error) {
 	return retSet, nil
 }
 
-func HasPermission(has PermissionSet, req ActionPermission) bool {
-	if _, found := has.Permissions[req]; found {
+// Checks if set has the permission to perform action `req`.
+func HasPermission(set PermissionSet, req ActionPermission) bool {
+	if _, found := set.Permissions[req]; found {
 		return true
 	} else {
 		return false

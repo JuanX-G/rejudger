@@ -5,6 +5,8 @@ import (
 	"testing"
 )
 
+// Check if the error if of type `PermissionConfigError` and has errType set to:
+// `PermissionConfigErrorInvalidAction`. Exit if any of the above are false.
 func CheckParseInvalidActionError(err error, t testing.TB) {
 	var permErr PermissionConfigError
 	var ok bool
@@ -17,6 +19,7 @@ func CheckParseInvalidActionError(err error, t testing.TB) {
 	}
 }
 
+// Check if parsing invalid permission retrurns an appropriate error.
 func TestParsePermission(t *testing.T) {
 	perm, err := ParseActionPermission("NOT_A_PERMISSION IN ANY WRODL!!")
 	if perm != PermissionUnknownAction {
