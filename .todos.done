@@ -3,3 +3,4 @@ WALA | id:3fdcd5bd10015488a10012db267fc30520f7ca4b
 add tests for permissionmgr | id:5a4b0dee32f2c316efe1e06a82140bf03b2b0290
 make mock store for permission manager | id:6457c46f95a52d66587c538d9d56b9deb4dd94a8
 Make BasePermissionMgr use a mockable store interface | id:ac687e5e6ef587e7d2fecebdd07a1e526aade41d
+Document passwords | id:eb1728cdfc39608be9820b45d93eb6846a8e8478
