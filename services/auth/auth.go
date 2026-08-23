@@ -13,17 +13,17 @@ import (
 // It is safe for any goroutines to access its fields and perform actions using the provided methods.
 type AuthManager struct {
 	mu       sync.RWMutex
-	sessions map[string]*customSync.PointerLock[Session] //map a token (string) to session info
+	sessions map[string]*customSync.LockedValue[Session] //map a token (string) to session info
 }
 
 func NewAuthManager() *AuthManager {
-	return &AuthManager{sessions: make(map[string]*customSync.PointerLock[Session])}
+	return &AuthManager{sessions: make(map[string]*customSync.LockedValue[Session])}
 }
 
 // getSessionLock is an internal function enabling the methods to lock the sessions map for shorter periods of time.
 // It resolves the session for a specified token, returns a AuthError with type AuthErrorNoSuchSession
 // if it fails to find a session for that token. It is safe for concurent calls.
-func (a *AuthManager) getSessionLock(token string) (*customSync.PointerLock[Session], error) {
+func (a *AuthManager) getSessionLock(token string) (*customSync.LockedValue[Session], error) {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 
@@ -62,7 +62,7 @@ func (a *AuthManager) NewSession(expiryDur int, userId int, userName string, per
 		}
 	}
 	session := newSession(expiryDur, userId, userName, perms)
-	sessionPtr := customSync.MakePointerLock(session)
+	sessionPtr := customSync.MakeLockedValue(session)
 
 	a.sessions[token] = sessionPtr
 	return token, nil
