@@ -17,19 +17,20 @@ const (
 	PermissionWrite
 )
 
+// Parse a permission name as string to a type.
 func ParseActionPermission(s string) (ActionPermission, error) {
 	switch s {
-	case "PlusOne":
+	case PermissionPlusOne.String():
 		return PermissionPlusOne, nil
-	case "SoftVeto":
+	case PermissionSoftVeto.String():
 		return PermissionSoftVeto, nil
-	case "HardVeto":
+	case PermissionHardVeto.String():
 		return PermissionHardVeto, nil
-	case "View":
+	case PermissionView.String():
 		return PermissionView, nil
-	case "Submit":
+	case PermissionSubmit.String():
 		return PermissionSubmit, nil
-	case "Write":
+	case PermissionWrite.String():
 		return PermissionWrite, nil
 	default:
 		return PermissionUnknownAction, PermissionConfigError{errType: PermissionConfigErrorInvalidAction}
