@@ -73,3 +73,15 @@ func TestGetUserPermissions(t *testing.T) {
 		t.Fatalf("get user permission recived an error from the data base but returned err == nil to the test.")
 	}
 }
+
+func TestInsertPermission(t *testing.T) {
+	mgr, store := setUpPermissionMgr(t)
+
+	mgr.InsertPermissionSet(t.Context(), DEFAULT_PERMISSIONS_SETS[0])
+	if len(store.PermInserted) != 1 {
+		t.Fatalf("inserted one permission, found: %d in the store", len(store.PermInserted))
+	}
+	if store.PermInserted[0].Action != DEFAULT_PERMISSION_SET_1_ACTION.String() {
+		t.Fatalf("found permission: %s in the store, expected: %s", store.PermInserted[0].Action, DEFAULT_PERMISSION_SET_1_ACTION)
+	}
+}
