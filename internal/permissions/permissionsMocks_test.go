@@ -31,13 +31,17 @@ var DEFAULT_PERMISSIONS_SETS = []PermissionSet{
 	PermissionSet{Context: DEFAULT_PERMS_CONTEXT2, Permissions: map[ActionPermission]struct{}{PermissionPlusOne: struct{}{}}},
 }
 
+const DEFAULT_PERMISSION_SET_1_ACTION = PermissionSubmit
+
 var DEFAULT_ACTIONS = []ActionPermission{PermissionSubmit, PermissionPlusOne}
 
 const DEFAULT_ROLE_ID = 22
 const DEFAULT_ROLE_NAME = "R"
 
 type mockBasePermissionMgrStore struct {
-	PermInserted         db.InsertPermissionParams
+	db.Querier
+
+	PermInserted         []db.InsertPermissionParams
 	PermDeleted          db.DeletePermissionParams
 	PermDeletedByContext string
 
@@ -53,7 +57,7 @@ func (ps *mockBasePermissionMgrStore) GetUserPermissions(_ context.Context, id i
 }
 
 func (ps *mockBasePermissionMgrStore) InsertPermission(_ context.Context, arg db.InsertPermissionParams) error {
-	ps.PermInserted = arg
+	ps.PermInserted = append(ps.PermInserted, arg)
 	return nil
 }
 
@@ -83,4 +87,8 @@ func (ps *mockBasePermissionMgrStore) AddPermissionToRole(_ context.Context, arg
 
 func (ps *mockBasePermissionMgrStore) GetPermissionId(context.Context, db.GetPermissionIdParams) (int32, error) {
 	return DEFAULT_PERMS_ID, nil
+}
+
+func (ps *mockBasePermissionMgrStore) ExecTx(_ context.Context, fn func(db.Querier) error) error {
+	return fn(ps)
 }
