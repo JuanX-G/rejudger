@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"revit/internal/db"
 	"revit/internal/permissions"
+	"revit/internal/store"
 	"revit/services/auth"
 	"revit/services/login"
 	userManagmentService "revit/services/userManagment"
@@ -21,7 +22,8 @@ func main() {
 	}
 
 	authMgr := auth.NewAuthManager()
-	permissionMgr, err := permissions.NewPermissionManager(ctx, db.New(pool))
+	store := store.NewStore(pool)
+	permissionMgr, err := permissions.NewPermissionManager(ctx, store)
 	if err != nil {
 		fmt.Println("Err: ", err)
 	}
