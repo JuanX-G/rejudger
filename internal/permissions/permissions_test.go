@@ -27,7 +27,17 @@ func TestParsePermission(t *testing.T) {
 }
 
 func TestPermissionSetFromString(t *testing.T) {
-	p, err := NewPermissionSetFromString("WRONG") // TODO: test err == nil
+	p, err := NewPermissionSetFromString("WRONG")
+	if err == nil {
+		t.Fatalf("invalid string passed to NewPermissionSetFromstring resulted in a nil error.")
+	}
+	if cfgErr, ok := errors.AsType[PermissionConfigError](err); ok {
+		if cfgErr.errType != PermissionConfigErrorInvalidString {
+			t.Fatalf("expected error type to be: 'PermissionConfigErrorInvalidString', found: %v", cfgErr.errType)
+		}
+	} else {
+		t.Fatalf("expected error of type: %T to be returned, found: %T", PermissionConfigError{}, err)
+	}
 	if p.Permissions != nil {
 		t.Fatalf("invalid string used to make a permission set, expected the returned set to have its permission map nil, found: %v", p.Permissions)
 	}
