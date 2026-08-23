@@ -5,6 +5,7 @@ import (
 	db "revit/internal/db"
 )
 
+// Permission manager interface.
 type PermissionsManager interface {
 	GetUserPermissions(ctx context.Context, userId int) ([]PermissionSet, error)
 	InsertPermission(ctx context.Context, context string, action ActionPermission) error
@@ -19,6 +20,7 @@ type PermissionsManager interface {
 	AddRoleWithPermissions(ctx context.Context, roleName string, perms PermissionSet) error
 }
 
+// Store methods for all DB accesses basePermissionManager needs.
 type basePermissionMgrStore interface {
 	GetUserPermissions(context.Context, int64) ([]db.Permission, error)
 	InsertPermission(context.Context, db.InsertPermissionParams) error
@@ -31,6 +33,7 @@ type basePermissionMgrStore interface {
 	ExecTx(context.Context, func(db.Querier) error) error
 }
 
+// Default permissionManager implementation.
 type BasePermissionsManager struct {
 	store basePermissionMgrStore
 }
@@ -39,6 +42,7 @@ func NewPermissionManager(ctx context.Context, queries basePermissionMgrStore) (
 	return &BasePermissionsManager{store: queries}, nil
 }
 
+// Get all permissions, a user with the `userId`, has.
 func (p *BasePermissionsManager) GetUserPermissions(ctx context.Context, userId int) ([]PermissionSet, error) {
 	perms, err := p.store.GetUserPermissions(ctx, int64(userId))
 	if err != nil {
