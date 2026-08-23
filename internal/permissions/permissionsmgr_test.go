@@ -25,7 +25,7 @@ func setUpPermissionMgr(t testing.TB) (PermissionsManager, *mockBasePermissionMg
 	return mgr, mock
 }
 
-// exists if the given permission set does not have at least one action from the ActionPermission slice.
+// exits if the given permission set does not have at least one action from the ActionPermission slice.
 func permissionSetExpectOne(t testing.TB, expected []ActionPermission, set PermissionSet) {
 	found := false
 	for _, p := range expected {
