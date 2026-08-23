@@ -17,13 +17,16 @@ const (
 	Argon2KeyLength = 32
 )
 
+// Parsed argon2id hash
 type Argon2Hash struct {
-	Hash                 []byte
-	Salt                 []byte
-	Time, Memory, KeyLen uint32
-	Threads              uint8
+	Hash                 []byte // Actual hash
+	Salt                 []byte // Salt used for the hash
+	Time, Memory, KeyLen uint32 // Argon2id params
+	Threads              uint8  // Ardon2id param
 }
 
+// returns a fomatted hash that hold data neccessary for
+// proper password verification later.
 func MakeHash(pass string) (string, error) {
 	salt := make([]byte, 32)
 	_, err := rand.Read(salt)
@@ -66,6 +69,7 @@ func (a Argon2Error) Error() string {
 	}
 }
 
+// Parse a hash string from MakeHash into a struct.
 func parseArgon2Hash(encodedHash string) (Argon2Hash, error) {
 	components := strings.Split(encodedHash, "$")
 	if len(components) != 6 {
@@ -99,10 +103,12 @@ func parseArgon2Hash(encodedHash string) (Argon2Hash, error) {
 	return config, nil
 }
 
+// Check if the pass corresponds to the storedHash. Stored hash should be of
+// the format given my MakeHash.
 func VerifyPassword(storedHash, pass string) (bool, error) {
 	config, err := parseArgon2Hash(storedHash)
 	if err != nil {
-		return false, fmt.Errorf("hash parsing failed: %w", err)
+		return false, err
 	}
 
 	computedHash := argon2.IDKey(
