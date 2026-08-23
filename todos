@@ -1,4 +1,3 @@
-Document custom sync | id:16f856a3ca5afc8deaf51fa138e65a5545d5d6cd
 Make auth use a mockable interface | id:22f0d8c9388cf593fc87373a4d1168accd2837fa
 Add logout tests | id:3b229c0996b97d48a371fac8223b0eed1b351689
 Document user managment | id:5c0de59894d45ae2239be692ee4964bcde017365
