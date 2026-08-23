@@ -5,6 +5,7 @@ import (
 	"testing"
 )
 
+// Count unique conexts in the PermissionSet slice
 func countContexts(in []PermissionSet) int {
 	seen := make(map[string]struct{})
 	for _, set := range in {
@@ -24,6 +25,7 @@ func setUpPermissionMgr(t testing.TB) (PermissionsManager, *mockBasePermissionMg
 	return mgr, mock
 }
 
+// exists if the given permission set does not have at least one action from the ActionPermission slice.
 func permissionSetExpectOne(t testing.TB, expected []ActionPermission, set PermissionSet) {
 	found := false
 	for _, p := range expected {
@@ -40,7 +42,7 @@ func permissionSetExpectOne(t testing.TB, expected []ActionPermission, set Permi
 func TestGetUserPermissions(t *testing.T) {
 	mgr, _ := setUpPermissionMgr(t)
 
-	permSets, err := mgr.GetUserPermissions(42)
+	permSets, err := mgr.GetUserPermissions(t.Context(), 42)
 	if err != nil {
 		t.Fatalf("unexpected error returned from calling GetUserPermissions, found err: %s, expected err == nil", err)
 	}
@@ -66,7 +68,7 @@ func TestGetUserPermissions(t *testing.T) {
 		t.Fatalf("expected contexts: %+v, found: %+v", expectedContexts, seenContexts)
 	}
 
-	_, err = mgr.GetUserPermissions(24) // causes the store to error
+	_, err = mgr.GetUserPermissions(t.Context(), 24) // causes the store to error
 	if err == nil {
 		t.Fatalf("get user permission recived an error from the data base but returned err == nil to the test.")
 	}
