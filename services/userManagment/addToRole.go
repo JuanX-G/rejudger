@@ -22,7 +22,7 @@ func (s *UserManagementService) addToRoleHandler() func(http.ResponseWriter, *ht
 		ctx, cancel := s.requestCtx(r)
 		defer cancel()
 
-		queryFn := func(q *db.Queries) error {
+		queryFn := func(q db.Querier) error {
 			roleIds := make([]int32, 0, len(query.Roles))
 			for _, r := range query.Roles {
 				role, err := q.GetRoleByName(ctx, r)

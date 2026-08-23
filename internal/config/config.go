@@ -92,7 +92,7 @@ func (c *ConfigMgr) syncRole(ctx context.Context, role RoleConfig) error {
 			permissionSets[perm.context] = set
 		}
 	}
-	queryFn := func(q *db.Queries) error {
+	queryFn := func(q db.Querier) error {
 		if err := q.InsertRole(ctx, role.name); err != nil {
 			return nil
 		}
@@ -129,7 +129,7 @@ func (c *ConfigMgr) syncRole(ctx context.Context, role RoleConfig) error {
 }
 
 // Sync pipeline stage definitions.
-func (c *ConfigMgr) syncStageQueriesGetId(ctx context.Context, q *db.Queries, stage PipelineStage) (int64, error) {
+func (c *ConfigMgr) syncStageQueriesGetId(ctx context.Context, q db.Querier, stage PipelineStage) (int64, error) {
 	version, err := stage.JSON()
 	if err != nil {
 		return 0, err
@@ -167,7 +167,7 @@ func (c *ConfigMgr) syncStageQueriesGetId(ctx context.Context, q *db.Queries, st
 // any of the configured pipelines.
 // TODO: delete unused pipelines
 func (c *ConfigMgr) SyncPipelines(ctx context.Context) error {
-	queryFn := func(q *db.Queries) error {
+	queryFn := func(q db.Querier) error {
 		for _, p := range c.Pipelines {
 			version, err := p.JSON()
 			if err != nil {

@@ -40,7 +40,7 @@ var ErrInvalidRevision = errors.New("error invalid revision")
 
 func (am *ArtifactManager) Put(ctx context.Context, data ArtifactMetadata, submissionId int64, r io.ReadCloser) error {
 	defer r.Close()
-	queryFn := func(q *db.Queries) error {
+	queryFn := func(q db.Querier) error {
 		ok, err := q.ExistsArtifact(ctx, db.ExistsArtifactParams{Hash: data.BaseHash, FileType: data.FileType.String()})
 		if err != nil {
 			return err
@@ -92,7 +92,7 @@ func (am *ArtifactManager) Put(ctx context.Context, data ArtifactMetadata, submi
 
 func (am *ArtifactManager) Get(ctx context.Context, fileType ArtifactFileType, hash string, rev int32) (io.ReadCloser, error) {
 	var reader io.ReadCloser
-	queryFn := func(q *db.Queries) error {
+	queryFn := func(q db.Querier) error {
 		ok, err := q.ExistsArtifact(ctx, db.ExistsArtifactParams{Hash: hash, FileType: fileType.String()})
 		if err != nil {
 			return err
@@ -128,7 +128,7 @@ func (am *ArtifactManager) Get(ctx context.Context, fileType ArtifactFileType, h
 }
 
 func (am *ArtifactManager) Delete(ctx context.Context, fileType ArtifactFileType, hash, name string, rev int32) error {
-	queryFn := func(q *db.Queries) error {
+	queryFn := func(q db.Querier) error {
 		ok, err := q.ExistsArtifact(ctx, db.ExistsArtifactParams{Hash: hash, FileType: fileType.String()})
 		if err != nil {
 			return err
@@ -168,7 +168,7 @@ func (am *ArtifactManager) Delete(ctx context.Context, fileType ArtifactFileType
 }
 
 func (am *ArtifactManager) Exists(ctx context.Context, fileType ArtifactFileType, hash, name string, rev int32) error {
-	queryFn := func(q *db.Queries) error {
+	queryFn := func(q db.Querier) error {
 		if rev < 1 {
 			return ErrInvalidRevision
 		}

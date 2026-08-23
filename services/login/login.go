@@ -84,7 +84,7 @@ func (l *LoginManager) LoginHandler() http.HandlerFunc {
 			return
 		}
 
-		perms, err := l.permissionsMgr.GetUserPermissions(id)
+		perms, err := l.permissionsMgr.GetUserPermissions(ctx, id)
 		if err != nil {
 			jsonHelpers.WriteJSON(w, http.StatusInternalServerError, LoginResponse{Success: false})
 			return
