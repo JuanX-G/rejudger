@@ -27,7 +27,7 @@ func (s *UserManagementService) getUserHandler() http.HandlerFunc {
 
 		var user db.User
 		userRoles := []db.Role{}
-		queryFn := func(queries *db.Queries) error {
+		queryFn := func(queries db.Querier) error {
 			user, err := getUserDataFromQuery(ctx, w, queries, query)
 			if err != nil {
 				return err

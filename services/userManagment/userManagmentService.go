@@ -52,7 +52,7 @@ type UserActionQuery struct {
 	InternaId string `json:"internal_id"`
 }
 
-func getUserDataFromQuery(ctx context.Context, w http.ResponseWriter, queries *db.Queries, query UserActionQuery) (db.User, error) {
+func getUserDataFromQuery(ctx context.Context, w http.ResponseWriter, queries db.Querier, query UserActionQuery) (db.User, error) {
 	var err error
 	var user db.User
 	if query.Email != "" && query.Name == "" {

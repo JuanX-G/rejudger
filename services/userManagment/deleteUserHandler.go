@@ -17,7 +17,7 @@ func (s *UserManagementService) deleteUserHandler() http.HandlerFunc {
 		ctx, cancel := s.requestCtx(r)
 		defer cancel()
 
-		queryFn := func(queries *db.Queries) error {
+		queryFn := func(queries db.Querier) error {
 			user, err := getUserDataFromQuery(ctx, w, s.store.GetQueries(), query)
 			if err != nil {
 				return err

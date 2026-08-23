@@ -24,7 +24,7 @@ const DEFAULT_PERMISSION_ID = 142
 
 var DEFAULT_ROLE = db.Role{ID: DEFAULT_ROLE_ID, Name: DEFAULT_ROLE_NAME}
 
-func (p *MockPermissionsManager) GetUserPermissions(userId int) ([]permissions.PermissionSet, error) {
+func (p *MockPermissionsManager) GetUserPermissions(_ context.Context, userId int) ([]permissions.PermissionSet, error) {
 	return []permissions.PermissionSet{p.Perms}, nil
 }
 
