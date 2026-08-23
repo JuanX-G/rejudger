@@ -1,7 +1,6 @@
 Document custom sync | id:16f856a3ca5afc8deaf51fa138e65a5545d5d6cd
 Make auth use a mockable interface | id:22f0d8c9388cf593fc87373a4d1168accd2837fa
 Add logout tests | id:3b229c0996b97d48a371fac8223b0eed1b351689
-Add tests to password hashing | id:563a9caff92d1d692b63a6b90053758a4f1cb1ba
 Document user managment | id:5c0de59894d45ae2239be692ee4964bcde017365
 Document permissions | id:5d0ca068d8068af5a2ab8f5ef38203870e0e9b71
 Document store | id:609e1e26b5d836c8ad1b64f9d6800f299c23d5b5

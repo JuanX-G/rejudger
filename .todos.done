@@ -1,5 +1,6 @@
 add T | id:2cb53ffd4d183b61a7fb7cb695fbcda4e4a36a1b
 WALA | id:3fdcd5bd10015488a10012db267fc30520f7ca4b
+Add tests to password hashing | id:563a9caff92d1d692b63a6b90053758a4f1cb1ba
 add tests for permissionmgr | id:5a4b0dee32f2c316efe1e06a82140bf03b2b0290
 make mock store for permission manager | id:6457c46f95a52d66587c538d9d56b9deb4dd94a8
 Make BasePermissionMgr use a mockable store interface | id:ac687e5e6ef587e7d2fecebdd07a1e526aade41d
