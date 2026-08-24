@@ -14,12 +14,12 @@ import (
 )
 
 type LoginManager struct {
-	authService    *auth.AuthManager
+	authService    auth.AuthManager
 	store          loginStore
 	permissionsMgr permissions.PermissionsManager
 }
 
-func NewLoginManager(ctx context.Context, queries loginStore, authService *auth.AuthManager, permissionMgr permissions.PermissionsManager) (*LoginManager, error) {
+func NewLoginManager(ctx context.Context, queries loginStore, authService auth.AuthManager, permissionMgr permissions.PermissionsManager) (*LoginManager, error) {
 	return &LoginManager{authService: authService, store: queries, permissionsMgr: permissionMgr}, nil
 }
 

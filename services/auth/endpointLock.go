@@ -2,16 +2,16 @@ package auth
 
 import (
 	"net/http"
-	"revit/internal/permissions"
 	"revit/internal/jsonHelpers"
+	"revit/internal/permissions"
 )
 
 type EndpointGuard struct {
 	Context string
-	authMgr *AuthManager
+	authMgr AuthManager
 }
 
-func NewEndpointGuard(authMgr *AuthManager, context string) *EndpointGuard {
+func NewEndpointGuard(authMgr AuthManager, context string) *EndpointGuard {
 	return &EndpointGuard{authMgr: authMgr, Context: context}
 }
 
