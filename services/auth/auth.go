@@ -7,23 +7,34 @@ import (
 	"time"
 )
 
+// Interface for auth manager.
+type AuthManager interface {
+	DeleteToken(token string) error
+	NewSession(expiryDur int, userId int, userName string, perms permissions.PermissionSet) (string, error)
+	UpdateSessionPerms(token string, perms permissions.PermissionSet) error
+	HasPermission(token string, context string, required permissions.ActionPermission) error
+	IsValid(token string) error
+	HasAllPermissions(token string, context string, required ...permissions.ActionPermission) error
+	GetUserId(token string) (int64, error)
+}
+
 // The AuthManager provides an API for managing authentication to the app. It is a light weight alternative to other forms of auth that run as a separate service.
 // This could be used in production, but is also meant to be used for debugging and testing purposes.
 // Because of frequest insertions it uses Mutex + Map instead of sync.Map.
 // It is safe for any goroutines to access its fields and perform actions using the provided methods.
-type AuthManager struct {
+type EmbeddedAuthManager struct {
 	mu       sync.RWMutex
 	sessions map[string]*customSync.LockedValue[Session] //map a token (string) to session info
 }
 
-func NewAuthManager() *AuthManager {
-	return &AuthManager{sessions: make(map[string]*customSync.LockedValue[Session])}
+func NewAuthManager() *EmbeddedAuthManager {
+	return &EmbeddedAuthManager{sessions: make(map[string]*customSync.LockedValue[Session])}
 }
 
 // getSessionLock is an internal function enabling the methods to lock the sessions map for shorter periods of time.
 // It resolves the session for a specified token, returns a AuthError with type AuthErrorNoSuchSession
 // if it fails to find a session for that token. It is safe for concurent calls.
-func (a *AuthManager) getSessionLock(token string) (*customSync.LockedValue[Session], error) {
+func (a *EmbeddedAuthManager) getSessionLock(token string) (*customSync.LockedValue[Session], error) {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 
@@ -35,7 +46,7 @@ func (a *AuthManager) getSessionLock(token string) (*customSync.LockedValue[Sess
 	return s, nil
 }
 
-func (a *AuthManager) DeleteToken(token string) error {
+func (a *EmbeddedAuthManager) DeleteToken(token string) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	_, found := a.sessions[token]
@@ -47,7 +58,7 @@ func (a *AuthManager) DeleteToken(token string) error {
 }
 
 // NewSession creates a new session behind a mutex, and adds it to the AuthManagers registry.
-func (a *AuthManager) NewSession(expiryDur int, userId int, userName string, perms permissions.PermissionSet) (string, error) {
+func (a *EmbeddedAuthManager) NewSession(expiryDur int, userId int, userName string, perms permissions.PermissionSet) (string, error) {
 	var token string
 	var err error
 	a.mu.Lock()
@@ -68,7 +79,7 @@ func (a *AuthManager) NewSession(expiryDur int, userId int, userName string, per
 	return token, nil
 }
 
-func (a *AuthManager) rotateToken(originalToken string) (string, error) {
+func (a *EmbeddedAuthManager) rotateToken(originalToken string) (string, error) {
 	var newToken string
 	var err error
 	a.mu.Lock()
@@ -91,7 +102,7 @@ func (a *AuthManager) rotateToken(originalToken string) (string, error) {
 	return newToken, nil
 }
 
-func (a *AuthManager) UpdateSessionPerms(token string, perms permissions.PermissionSet) error {
+func (a *EmbeddedAuthManager) UpdateSessionPerms(token string, perms permissions.PermissionSet) error {
 	sessionPtr, err := a.getSessionLock(token)
 	if err != nil {
 		return err
@@ -103,7 +114,7 @@ func (a *AuthManager) UpdateSessionPerms(token string, perms permissions.Permiss
 	return nil
 }
 
-func (a *AuthManager) HasPermission(token string, context string, required permissions.ActionPermission) error {
+func (a *EmbeddedAuthManager) HasPermission(token string, context string, required permissions.ActionPermission) error {
 	session, err := a.getSessionLock(token)
 	if err != nil {
 		return err
@@ -130,7 +141,7 @@ func (a *AuthManager) HasPermission(token string, context string, required permi
 	return verifyErr
 }
 
-func (a *AuthManager) IsValid(token string) error {
+func (a *EmbeddedAuthManager) IsValid(token string) error {
 	session, err := a.getSessionLock(token)
 	if err != nil {
 		return err
@@ -148,7 +159,7 @@ func (a *AuthManager) IsValid(token string) error {
 	return verifyErr
 }
 
-func (a *AuthManager) HasAllPermissions(token string, context string, required ...permissions.ActionPermission) error {
+func (a *EmbeddedAuthManager) HasAllPermissions(token string, context string, required ...permissions.ActionPermission) error {
 	session, err := a.getSessionLock(token)
 	if err != nil {
 		return err
@@ -179,7 +190,7 @@ func (a *AuthManager) HasAllPermissions(token string, context string, required .
 	return verifyErr
 }
 
-func (a *AuthManager) GetUserId(token string) (int64, error) {
+func (a *EmbeddedAuthManager) GetUserId(token string) (int64, error) {
 	session, err := a.getSessionLock(token)
 	if err != nil {
 		return 0, err

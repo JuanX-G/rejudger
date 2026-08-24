@@ -29,7 +29,7 @@ func (s *UserManagementService) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /magament/users/add_role", s.guard.LockWrite(s.addToRoleHandler()))
 }
 
-func NewUserManagementService(pool *pgxpool.Pool, authMgr *auth.AuthManager, appContext string, timeout uint) *UserManagementService {
+func NewUserManagementService(pool *pgxpool.Pool, authMgr auth.AuthManager, appContext string, timeout uint) *UserManagementService {
 	guard := auth.NewEndpointGuard(authMgr, appContext)
 	if timeout != 0 {
 		return &UserManagementService{guard: guard, store: store.NewStore(pool), timeout: time.Duration(timeout) * time.Second}

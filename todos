@@ -1,7 +1,5 @@
-Make auth use a mockable interface | id:22f0d8c9388cf593fc87373a4d1168accd2837fa
 Add logout tests | id:3b229c0996b97d48a371fac8223b0eed1b351689
 Document user managment | id:5c0de59894d45ae2239be692ee4964bcde017365
-Document permissions | id:5d0ca068d8068af5a2ab8f5ef38203870e0e9b71
 Document store | id:609e1e26b5d836c8ad1b64f9d6800f299c23d5b5
 Make config use a mockable store interface | id:67b9084d8cbe0381ace86497b16702411d7316b9
 Document login | id:68b794ff5a55a671904046191345b92fbafc6797
