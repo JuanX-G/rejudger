@@ -7,6 +7,7 @@ import (
 
 const DEFAULT_APPCONTEXT = "context"
 const DEFAULT_EXPIRY = 120
+const DEFAULT_SESSION_TOKEN = "AB2137"
 
 const DEFAULT_USERNAME = "user"
 const DEFAULT_USERID = 1
