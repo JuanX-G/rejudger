@@ -7,6 +7,17 @@ import (
 	"time"
 )
 
+// Interface for auth manager.
+type AuthManager interface {
+	DeleteToken(token string) error
+	NewSession(expiryDur int, userId int, userName string, perms permissions.PermissionSet) (string, error)
+	UpdateSessionPerms(token string, perms permissions.PermissionSet) error
+	HasPermission(token string, context string, required permissions.ActionPermission) error
+	IsValid(token string) error
+	HasAllPermissions(token string, context string, required ...permissions.ActionPermission) error
+	GetUserId(token string) (int64, error)
+}
+
 // The AuthManager provides an API for managing authentication to the app. It is a light weight alternative to other forms of auth that run as a separate service.
 // This could be used in production, but is also meant to be used for debugging and testing purposes.
 // Because of frequest insertions it uses Mutex + Map instead of sync.Map.
