@@ -6,5 +6,7 @@ Add tests to password hashing | id:563a9caff92d1d692b63a6b90053758a4f1cb1ba
 add tests for permissionmgr | id:5a4b0dee32f2c316efe1e06a82140bf03b2b0290
 Document permissions | id:5d0ca068d8068af5a2ab8f5ef38203870e0e9b71
 make mock store for permission manager | id:6457c46f95a52d66587c538d9d56b9deb4dd94a8
+tp | id:903a0bf658baaaa89463ba893c88ae9c0be5a9bb
 Make BasePermissionMgr use a mockable store interface | id:ac687e5e6ef587e7d2fecebdd07a1e526aade41d
+Add login auth tests | id:b4e6868b7f46b9dca8369c710b75c1fd2d10e997
 Document passwords | id:eb1728cdfc39608be9820b45d93eb6846a8e8478
