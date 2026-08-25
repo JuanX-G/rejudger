@@ -14,13 +14,19 @@ func MakeAuthMgr(perms permissions.PermissionSet) (string, *MockAuthManager, err
 
 type MockAuthManager struct {
 	SavedSession auth.Session
+	Token        string
+	DeletedToken string
 	full         bool
 	ReturnErrors bool
 }
 
 func (am *MockAuthManager) DeleteToken(token string) error {
+	if am.Token != token {
+		return auth.ErrNoSession
+	}
 	am.full = false
 	am.SavedSession = auth.Session{}
+	am.DeletedToken = token
 	return nil
 }
 
@@ -32,6 +38,7 @@ func (am *MockAuthManager) NewSession(expiryDur int, userId int, userName string
 	}
 	am.SavedSession.Expiry = time.Time{}
 	am.full = true
+	am.Token = DEFAULT_SESSION_TOKEN
 	return DEFAULT_SESSION_TOKEN, nil
 }
 

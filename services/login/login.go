@@ -25,7 +25,7 @@ func NewLoginManager(ctx context.Context, queries loginStore, authService auth.A
 
 func (l *LoginManager) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /session/login", l.LoginHandler())
-	mux.HandleFunc("POST /session/logout", l.LogoutHandler())
+	mux.HandleFunc("GET /session/logout", l.LogoutHandler())
 }
 
 type LoginQuery struct {
