@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-func MakeAuthMgr(perms permissions.PermissionSet) (string, auth.AuthManager, error) {
-	mgr := auth.NewAuthManager()
+func MakeAuthMgr(perms permissions.PermissionSet) (string, *MockAuthManager, error) {
+	mgr := &MockAuthManager{}
 	token, err := mgr.NewSession(DEFAULT_EXPIRY, DEFAULT_USERID, DEFAULT_USERNAME, DEFAULT_PERMISSION_SET)
 	return token, mgr, err
 }
