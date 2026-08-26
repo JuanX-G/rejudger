@@ -101,3 +101,11 @@ func HasPermission(set PermissionSet, req ActionPermission) bool {
 		return false
 	}
 }
+
+func NewPermissionSet(appContext string, actions ...ActionPermission) PermissionSet {
+	out := PermissionSet{Context: appContext, Permissions: make(map[ActionPermission]struct{})}
+	for _, act := range actions {
+		out.Permissions[act] = struct{}{}
+	}
+	return out
+}
