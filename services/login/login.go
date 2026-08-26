@@ -12,15 +12,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+// Query for login. If both email and username are provided then the email will
+// be used. If none are provided an error is returned.
 type LoginQuery struct {
-	Password string `json:"password"`
-	Email    string `json:"email"`
-	UserName string `json:"user_name"`
+	Password string `json:"password"`  // User password
+	Email    string `json:"email"`     // User email
+	UserName string `json:"user_name"` // User name
 }
 
 type LoginResponse struct {
-	Success bool   `json:"sucess"`
-	Token   string `json:"token"`
+	Success bool   `json:"sucess"` // True if logging succeeds
+	Token   string `json:"token"`  // Token for the sessions created if login succeeds. Empty on failure
 }
 
 // Use [LoginQuery] to login with this handler. If either email or username
