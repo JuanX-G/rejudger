@@ -39,6 +39,10 @@ func TestLogout(t *testing.T) {
 	if !resp.Success {
 		t.Fatalf("expected logout to succeed, found success: %t", resp.Success)
 	}
+
+	if authMgr.DeletedToken != token {
+		t.Fatalf("called logout with token: %s, token deleted was: %s", token, authMgr.DeletedToken)
+	}
 }
 
 func TestLogoutInvalidSession(t *testing.T) {

@@ -1,6 +1,7 @@
 Document custom sync | id:16f856a3ca5afc8deaf51fa138e65a5545d5d6cd
 Make auth use a mockable interface | id:22f0d8c9388cf593fc87373a4d1168accd2837fa
 add T | id:2cb53ffd4d183b61a7fb7cb695fbcda4e4a36a1b
+Add logout tests | id:3b229c0996b97d48a371fac8223b0eed1b351689
 WALA | id:3fdcd5bd10015488a10012db267fc30520f7ca4b
 Add tests to password hashing | id:563a9caff92d1d692b63a6b90053758a4f1cb1ba
 add tests for permissionmgr | id:5a4b0dee32f2c316efe1e06a82140bf03b2b0290
