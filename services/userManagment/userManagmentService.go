@@ -7,6 +7,7 @@ import (
 
 	db "revit/internal/db"
 	"revit/internal/jsonHelpers"
+	"revit/internal/permissions"
 	"revit/internal/store"
 	"revit/services/auth"
 
@@ -23,10 +24,10 @@ type UserManagementService struct {
 }
 
 func (s *UserManagementService) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("POST /magament/users/get", s.guard.LockRead(s.getUserHandler()))
-	mux.HandleFunc("POST /managment/users/add", s.guard.LockWrite(s.addUserHandler()))
-	mux.HandleFunc("POST /magament/users/delete", s.guard.LockWrite(s.deleteUserHandler()))
-	mux.HandleFunc("POST /magament/users/add_role", s.guard.LockWrite(s.addToRoleHandler()))
+	mux.HandleFunc("POST /magament/users/get", s.guard.Lock(s.getUserHandler(), permissions.NewPermissionSet("", permissions.PermissionView)))
+	mux.HandleFunc("POST /managment/users/add", s.guard.Lock(s.addUserHandler(), permissions.NewPermissionSet("", permissions.PermissionWrite)))
+	mux.HandleFunc("POST /magament/users/delete", s.guard.Lock(s.deleteUserHandler(), permissions.NewPermissionSet("", permissions.PermissionWrite)))
+	mux.HandleFunc("POST /magament/users/add_role", s.guard.Lock(s.addToRoleHandler(), permissions.NewPermissionSet("", permissions.PermissionWrite)))
 }
 
 func NewUserManagementService(pool *pgxpool.Pool, authMgr auth.AuthManager, appContext string, timeout uint) *UserManagementService {

@@ -2,6 +2,7 @@ package submission
 
 import (
 	"net/http"
+	"revit/internal/permissions"
 	"revit/services/artifactservice"
 	"revit/services/auth"
 	"time"
@@ -27,5 +28,5 @@ func NewSubmissionService(queries submissionStore, authMgr auth.AuthManager, art
 }
 
 func (s *SubmissionService) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("POST /submissions/submit", s.guard.LockSubmit(s.HandleSubmission()))
+	mux.HandleFunc("POST /submissions/submit", s.guard.Lock(s.HandleSubmission(), permissions.NewPermissionSet("", permissions.PermissionSubmit)))
 }

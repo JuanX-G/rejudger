@@ -7,8 +7,10 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"revit/internal/db"
 	"revit/internal/passwords"
+	"revit/internal/permissions"
 	"revit/internal/sharedtesting"
 	"revit/internal/testingservices"
 	"testing"
@@ -50,32 +52,11 @@ func TestLoginEmail(t *testing.T) {
 	if err != nil {
 		sharedtesting.ServiceSetupFail(t, err, "mock permissions")
 	}
+
 	service.RegisterRoutes(mux)
-
 	query := LoginQuery{Password: testingservices.DEFAULT_PASSWORD, Email: testingservices.DEFAULT_EMAIL}
-	b, err := json.Marshal(query)
-	if err != nil {
-		sharedtesting.OperationFail(t, err, "json marshalling of struct LoginQuery")
-	}
-
-	reader := bytes.NewReader(b)
-
-	req := httptest.NewRequest(http.MethodPost, "/session/login", reader)
-	rec := httptest.NewRecorder()
-
-	mux.ServeHTTP(rec, req)
-
-	res := rec.Result()
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		sharedtesting.WrongHttpCode(t, http.StatusOK, res.StatusCode)
-	}
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		sharedtesting.OperationFail(t, err, "io.ReadAll of response body")
-	}
+	body, cancelFn := MakeLoginRequest(t, service, query)
+	defer cancelFn()
 
 	var resp LoginResponse
 	err = json.Unmarshal(body, &resp)
@@ -94,7 +75,6 @@ func TestLoginWrongPassword(t *testing.T) {
 		sharedtesting.ServiceSetupFail(t, err, "auth")
 	}
 
-	mux := http.NewServeMux()
 	store := &MockLoginStore{}
 	permMgr := &testingservices.MockPermissionsManager{}
 
@@ -102,10 +82,57 @@ func TestLoginWrongPassword(t *testing.T) {
 	if err != nil {
 		sharedtesting.ServiceSetupFail(t, err, "mock permissions")
 	}
-	service.RegisterRoutes(mux)
 
 	query := LoginQuery{Password: "word", Email: testingservices.DEFAULT_EMAIL}
-	b, err := json.Marshal(query)
+	body, closeFn := MakeLoginRequest(t, service, query)
+	defer closeFn()
+	var resp LoginResponse
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		sharedtesting.OperationFail(t, err, "json unmarshaling of response body")
+	}
+
+	if resp.Success {
+		t.Fatalf("expected the operation to return: %t, found: %t", false, resp.Success)
+	}
+}
+
+func TestLoginPermissions(t *testing.T) {
+	_, authMgr, err := testingservices.MakeAuthMgr(testingservices.DEFAULT_PERMISSION_SET)
+	if err != nil {
+		sharedtesting.ServiceSetupFail(t, err, "auth")
+	}
+
+	permissionMgr := &testingservices.MockPermissionsManager{}
+	permissionMgr.Perms = permissions.PermissionSet{
+		Context:     testingservices.DEFAULT_PERMISSION_SET.Context,
+		Permissions: testingservices.DEFAULT_PERMISSION_SET.Permissions,
+	}
+	store := &MockLoginStore{}
+
+	loginMgr, err := NewLoginManager(t.Context(), store, authMgr, permissionMgr)
+	if err != nil {
+		sharedtesting.ServiceSetupFail(t, err, "login manager")
+	}
+
+	query := LoginQuery{Password: testingservices.DEFAULT_PASSWORD, Email: testingservices.DEFAULT_EMAIL, UserName: ""}
+	_, cancelFn := MakeLoginRequest(t, loginMgr, query)
+	defer cancelFn()
+
+	if p, ok := authMgr.SavedSession.Permissions[testingservices.DEFAULT_PERMISSION_SET.Context]; ok {
+		if !reflect.DeepEqual(p.Permissions, testingservices.DEFAULT_PERMISSION_SET.Permissions) {
+			t.Fatalf("expected map: %+v, found: %+v", p.Permissions, testingservices.DEFAULT_PERMISSION_SET)
+		}
+	} else {
+		t.Fatalf("expected login to resolve permissions under the context: %s", testingservices.DEFAULT_PERMISSION_SET.Context)
+	}
+}
+
+func MakeLoginRequest(t *testing.T, loginMgr *LoginManager, loginQuery LoginQuery) ([]byte, func()) {
+	mux := http.NewServeMux()
+	loginMgr.RegisterRoutes(mux)
+
+	b, err := json.Marshal(loginQuery)
 	if err != nil {
 		sharedtesting.OperationFail(t, err, "json marshalling of struct LoginQuery")
 	}
@@ -118,24 +145,9 @@ func TestLoginWrongPassword(t *testing.T) {
 	mux.ServeHTTP(rec, req)
 
 	res := rec.Result()
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusUnauthorized {
-		sharedtesting.WrongHttpCode(t, http.StatusOK, res.StatusCode)
-	}
-
-	body, err := io.ReadAll(res.Body)
+	bytes, err := io.ReadAll(res.Body)
 	if err != nil {
 		sharedtesting.OperationFail(t, err, "io.ReadAll of response body")
 	}
-
-	var resp LoginResponse
-	err = json.Unmarshal(body, &resp)
-	if err != nil {
-		sharedtesting.OperationFail(t, err, "json unmarshaling of response body")
-	}
-
-	if resp.Success {
-		t.Fatalf("expected the operation to return: %t, found: %t", false, resp.Success)
-	}
+	return bytes, func() { res.Body.Close() }
 }

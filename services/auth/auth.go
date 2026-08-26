@@ -201,3 +201,7 @@ func (a *EmbeddedAuthManager) GetUserId(token string) (int64, error) {
 	})
 	return userId, nil
 }
+
+var ErrForbidden = AuthError{errType: AuthErrorForbidden}
+var ErrExpired = AuthError{errType: AuthErrorExpiredSession}
+var ErrNoSession = AuthError{errType: AuthErrorNoSuchSession}

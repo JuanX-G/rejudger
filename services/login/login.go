@@ -7,26 +7,10 @@ import (
 	"revit/internal/jsonHelpers"
 	"revit/internal/passwords"
 	"revit/internal/permissions"
-	"revit/services/auth"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
-
-type LoginManager struct {
-	authService    auth.AuthManager
-	store          loginStore
-	permissionsMgr permissions.PermissionsManager
-}
-
-func NewLoginManager(ctx context.Context, queries loginStore, authService auth.AuthManager, permissionMgr permissions.PermissionsManager) (*LoginManager, error) {
-	return &LoginManager{authService: authService, store: queries, permissionsMgr: permissionMgr}, nil
-}
-
-func (l *LoginManager) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("POST /session/login", l.LoginHandler())
-	mux.HandleFunc("POST /session/logout", l.LogoutHandler())
-}
 
 type LoginQuery struct {
 	Password string `json:"password"`
@@ -39,6 +23,9 @@ type LoginResponse struct {
 	Token   string `json:"token"`
 }
 
+// Use [LoginQuery] to login with this handler. If either email or username
+// is empty, then the non-empty one will be used; if both are empty a error
+// will be sent back. If both are set, email will be used.
 func (l *LoginManager) LoginHandler() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
