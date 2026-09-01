@@ -9,10 +9,13 @@ import (
 	"net/http/httptest"
 	"revit/internal/db"
 	"revit/internal/hashing"
+	"revit/internal/logger"
 	shared "revit/internal/sharedtesting"
 	services "revit/internal/testingservices"
 	"testing"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type InsertionNotification struct {
@@ -42,9 +45,30 @@ func (ss *mockSubmissionStore) GetSubmissionsByHash(ctx context.Context, hash st
 	}, nil
 }
 
+func (ss *mockSubmissionStore) GetSubmissionsByAuthor(ctx context.Context, author int64) ([]db.Submission, error) {
+	return []db.Submission{}, nil
+}
+
+func (ss *mockSubmissionStore) GetSubmissionsByAuthorOffset(ctx context.Context, arg db.GetSubmissionsByAuthorOffsetParams) ([]db.Submission, error) {
+	return []db.Submission{}, nil
+}
+
+func (ss *mockSubmissionStore) GetUserByEmail(ctx context.Context, email pgtype.Text) (db.User, error) {
+	return db.User{}, nil
+}
+
+func (ss *mockSubmissionStore) GetUserByUserName(ctx context.Context, name string) (db.User, error) {
+	return db.User{}, nil
+}
+
 const TEST_SUBMISSION = "Lorem Ipsum"
 
 func TestSubmitHandler(t *testing.T) {
+	logDest := &services.MockLogDest{}
+	logr, err := logger.MakeDefaultMultiLogger(logDest)
+	if err != nil {
+		shared.ServiceSetupFail(t, err, "logger")
+	}
 	token, authmgr, err := services.MakeAuthMgr(services.DEFAULT_PERMISSION_SET)
 	if err != nil {
 		shared.ServiceSetupFail(t, err, "auth")
@@ -58,7 +82,7 @@ func TestSubmitHandler(t *testing.T) {
 
 	artifactService := services.NewMockArtifactService(artifactStore)
 
-	service := NewSubmissionService(store, authmgr, artifactService, services.DEFAULT_APPCONTEXT, 0)
+	service := NewSubmissionService(store, authmgr, artifactService, logr, services.DEFAULT_APPCONTEXT, 0)
 	service.RegisterRoutes(mux)
 
 	// stage a request with no artifacts
@@ -114,6 +138,11 @@ func TestSubmitHandler(t *testing.T) {
 }
 
 func TestSubmitArtifactUploads(t *testing.T) {
+	logDest := &services.MockLogDest{}
+	logr, err := logger.MakeDefaultMultiLogger(logDest)
+	if err != nil {
+		shared.ServiceSetupFail(t, err, "logger")
+	}
 	token, authmgr, err := services.MakeAuthMgr(services.DEFAULT_PERMISSION_SET)
 	if err != nil {
 		shared.ServiceSetupFail(t, err, "auth")
@@ -128,7 +157,7 @@ func TestSubmitArtifactUploads(t *testing.T) {
 	artifactService := services.NewMockArtifactService(artifactStore)
 	artifactService.ExpectedArtifacts = make(chan services.ExpectedMsg, 8)
 	defer close(artifactService.ExpectedArtifacts)
-	service := NewSubmissionService(store, authmgr, artifactService, services.DEFAULT_APPCONTEXT, 0)
+	service := NewSubmissionService(store, authmgr, artifactService, logr, services.DEFAULT_APPCONTEXT, 0)
 	service.RegisterRoutes(mux)
 
 	// stage a request with a artifact
@@ -186,22 +215,72 @@ func TestSubmitArtifactUploads(t *testing.T) {
 }
 
 func TestServiceTimeoutSetting(t *testing.T) {
+	logDest := &services.MockLogDest{}
+	logr, err := logger.MakeDefaultMultiLogger(logDest)
+	if err != nil {
+		shared.ServiceSetupFail(t, err, "logger")
+	}
 	_, authmgr, err := services.MakeAuthMgr(services.DEFAULT_PERMISSION_SET)
 	if err != nil {
 		shared.ServiceSetupFail(t, err, "auth")
 	}
 
-	svc := NewSubmissionService(nil, authmgr, nil, "", 0)
+	svc := NewSubmissionService(nil, authmgr, nil, logr, "", 0) // It is okay to use nil for some interfaces provided we do not make any requests
 
 	expected := DEFAULT_SUBMISSION_TIMEOUT * time.Second
 	if svc.timeout != expected {
 		t.Fatalf("expected timeout to be: %s, found: %s", expected, svc.timeout)
 	}
 
-	svc = NewSubmissionService(nil, authmgr, nil, "", 15)
+	svc = NewSubmissionService(nil, authmgr, nil, logr, "", 15)
 
 	expected = 15 * time.Second
 	if svc.timeout != expected {
 		t.Fatalf("expected timeout to be: %s, found: %s", expected, svc.timeout)
 	}
+}
+
+func TestGetSubmission(t *testing.T) {
+	logDest := &services.MockLogDest{}
+	logr, err := logger.MakeDefaultMultiLogger(logDest)
+	if err != nil {
+		shared.ServiceSetupFail(t, err, "logger")
+	}
+	token, authmgr, err := services.MakeAuthMgr(services.DEFAULT_PERMISSION_SET)
+	if err != nil {
+		shared.ServiceSetupFail(t, err, "auth")
+	}
+	store := &mockSubmissionStore{}
+
+	mux := http.NewServeMux()
+	artifactStore := &services.MockArtifactStore{}
+
+	artifactService := services.NewMockArtifactService(artifactStore)
+	artifactService.ExpectedArtifacts = make(chan services.ExpectedMsg, 8)
+	defer close(artifactService.ExpectedArtifacts)
+	service := NewSubmissionService(store, authmgr, artifactService, logr, services.DEFAULT_APPCONTEXT, 0)
+	service.RegisterRoutes(mux)
+
+	query := GetSubmissionByAuthorQuery{Email: services.DEFAULT_EMAIL}
+	b, err := json.Marshal(query)
+	if err != nil {
+		shared.OperationFail(t, err, "json marshalling of struct GetSubmissionByAuthorQuery")
+	}
+
+	reader := bytes.NewReader(b)
+
+	req := httptest.NewRequest(http.MethodPost, "/submissions/get", reader)
+	req.Header.Add("X-Auth-Token", token)
+
+	rec := httptest.NewRecorder()
+
+	mux.ServeHTTP(rec, req) 
+
+	res := rec.Result()
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		shared.WrongHttpCode(t, http.StatusOK, res.StatusCode)
+	}
+
 }
