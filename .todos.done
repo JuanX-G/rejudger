@@ -8,6 +8,7 @@ add tests for permissionmgr | id:5a4b0dee32f2c316efe1e06a82140bf03b2b0290
 Document permissions | id:5d0ca068d8068af5a2ab8f5ef38203870e0e9b71
 AAA | id:606ec6e9bd8a8ff2ad14e5fade3f264471e82251
 make mock store for permission manager | id:6457c46f95a52d66587c538d9d56b9deb4dd94a8
+Document login | id:68b794ff5a55a671904046191345b92fbafc6797
 tp | id:903a0bf658baaaa89463ba893c88ae9c0be5a9bb
 Document httpHelpers | id:a6cf5862e55b1c8fdd593b9bd092f6b800867cfe
 Make BasePermissionMgr use a mockable store interface | id:ac687e5e6ef587e7d2fecebdd07a1e526aade41d
