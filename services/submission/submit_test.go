@@ -2,66 +2,18 @@ package submission
 
 import (
 	"bytes"
-	"context"
 	"encoding/json/v2"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"revit/internal/db"
+	"reflect"
 	"revit/internal/hashing"
 	"revit/internal/logger"
 	shared "revit/internal/sharedtesting"
 	services "revit/internal/testingservices"
 	"testing"
 	"time"
-
-	"github.com/jackc/pgx/v5/pgtype"
 )
-
-type InsertionNotification struct {
-	db.InsertSubmissionParams
-	submissionId int64
-}
-
-type mockSubmissionStore struct {
-	insertNotify chan InsertionNotification
-}
-
-func (ss *mockSubmissionStore) GetUserById(ctx context.Context, id int64) (db.User, error) {
-	return db.User{
-		ID:   services.DEFAULT_USERID,
-		Name: services.DEFAULT_USERNAME,
-	}, nil
-}
-
-func (ss *mockSubmissionStore) InsertSubmission(ctx context.Context, arg db.InsertSubmissionParams) error {
-	ss.insertNotify <- InsertionNotification{arg, 123}
-	return nil
-}
-
-func (ss *mockSubmissionStore) GetSubmissionsByHash(ctx context.Context, hash string) (db.Submission, error) {
-	return db.Submission{
-		ID: 123,
-	}, nil
-}
-
-func (ss *mockSubmissionStore) GetSubmissionsByAuthor(ctx context.Context, author int64) ([]db.Submission, error) {
-	return []db.Submission{}, nil
-}
-
-func (ss *mockSubmissionStore) GetSubmissionsByAuthorOffset(ctx context.Context, arg db.GetSubmissionsByAuthorOffsetParams) ([]db.Submission, error) {
-	return []db.Submission{}, nil
-}
-
-func (ss *mockSubmissionStore) GetUserByEmail(ctx context.Context, email pgtype.Text) (db.User, error) {
-	return db.User{}, nil
-}
-
-func (ss *mockSubmissionStore) GetUserByUserName(ctx context.Context, name string) (db.User, error) {
-	return db.User{}, nil
-}
-
-const TEST_SUBMISSION = "Lorem Ipsum"
 
 func TestSubmitHandler(t *testing.T) {
 	logDest := &services.MockLogDest{}
@@ -261,7 +213,7 @@ func TestGetSubmission(t *testing.T) {
 	service := NewSubmissionService(store, authmgr, artifactService, logr, services.DEFAULT_APPCONTEXT, 0)
 	service.RegisterRoutes(mux)
 
-	query := GetSubmissionByAuthorQuery{Email: services.DEFAULT_EMAIL}
+	query := GetSubmissionByAuthorQuery{Email: services.DEFAULT_EMAIL, Offset: 0}
 	b, err := json.Marshal(query)
 	if err != nil {
 		shared.OperationFail(t, err, "json marshalling of struct GetSubmissionByAuthorQuery")
@@ -274,7 +226,7 @@ func TestGetSubmission(t *testing.T) {
 
 	rec := httptest.NewRecorder()
 
-	mux.ServeHTTP(rec, req) 
+	mux.ServeHTTP(rec, req)
 
 	res := rec.Result()
 	defer res.Body.Close()
@@ -283,4 +235,22 @@ func TestGetSubmission(t *testing.T) {
 		shared.WrongHttpCode(t, http.StatusOK, res.StatusCode)
 	}
 
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		shared.OperationFail(t, err, "io.ReadAll of response body")
+	}
+	var resp GetSubmissionResponse
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		shared.OperationFail(t, err, "json unmarshaling of response body")
+	}
+	if !resp.Success {
+		t.Fatalf("expected response to report success = %t, found: %t", true, resp.Success)
+	}
+	if len(resp.Submissions) != 2 {
+		t.Fatalf("sent offset = %d, email = %s, found: %d submission returned", query.Offset, query.Email, len(resp.Submissions))
+	}
+	if !reflect.DeepEqual(resp.Submissions, DEFAULT_RESP_SUBMISSIONS) {
+		t.Fatalf("found submissions: %+v, expected: %+v", resp.Submissions, DEFAULT_RESP_SUBMISSIONS)
+	}
 }

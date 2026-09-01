@@ -79,9 +79,8 @@ func (ss *SubmissionService) HandleGetSubmissionByAuthor() http.HandlerFunc {
 			userdt := UserData{}
 			if user.Email.Valid {
 				userdt.Email = user.Email.String
-			} else {
-				userdt.Name = user.Name
 			}
+			userdt.Name = user.Name
 			resSubmissions = append(resSubmissions, Submission{
 				DateCrated: s.CreatedAt.Time,
 				Author:     userdt,
