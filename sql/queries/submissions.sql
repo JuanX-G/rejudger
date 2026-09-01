@@ -15,6 +15,11 @@ WHERE hash = $1;
 SELECT * FROM submissions
 WHERE author = $1;
 
+-- name: GetSubmissionsByAuthorOffset :many
+SELECT * FROM submissions
+WHERE author = $1
+OFFSET  $2;
+
 -- name: GetSubmissionsById :one
 SELECT * FROM submissions
 WHERE id = $1;

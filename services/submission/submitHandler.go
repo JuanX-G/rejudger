@@ -1,7 +1,6 @@
 package submission
 
 import (
-	"context"
 	"net/http"
 
 	"revit/internal/db"
@@ -19,10 +18,6 @@ type SubmissionQuery struct {
 type SubmissionResponse struct {
 	Success bool   `json:"success"`
 	Hash    string `json:"hash"`
-}
-
-func (s *SubmissionService) requestCtx(r *http.Request) (context.Context, context.CancelFunc) {
-	return context.WithTimeout(r.Context(), s.timeout)
 }
 
 func (s *SubmissionService) HandleSubmission() http.HandlerFunc {

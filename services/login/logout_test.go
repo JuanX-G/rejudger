@@ -10,6 +10,7 @@ import (
 	"testing"
 )
 
+// Test happy path of logout.
 func TestLogout(t *testing.T) {
 	token, authMgr, err := testingservices.MakeAuthMgr(testingservices.DEFAULT_PERMISSION_SET)
 	if err != nil {
@@ -40,11 +41,13 @@ func TestLogout(t *testing.T) {
 		t.Fatalf("expected logout to succeed, found success: %t", resp.Success)
 	}
 
+	// Check if the handler deletes the proper token.
 	if authMgr.DeletedToken != token {
 		t.Fatalf("called logout with token: %s, token deleted was: %s", token, authMgr.DeletedToken)
 	}
 }
 
+// Test logout when session does not exist.
 func TestLogoutInvalidSession(t *testing.T) {
 	_, authMgr, err := testingservices.MakeAuthMgr(testingservices.DEFAULT_PERMISSION_SET)
 	if err != nil {
@@ -76,6 +79,7 @@ func TestLogoutInvalidSession(t *testing.T) {
 	}
 }
 
+// Test login with no token header.
 func TestLogoutWithoutToken(t *testing.T) {
 	_, authMgr, err := testingservices.MakeAuthMgr(testingservices.DEFAULT_PERMISSION_SET)
 	if err != nil {

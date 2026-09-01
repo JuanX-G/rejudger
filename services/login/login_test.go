@@ -38,6 +38,7 @@ func (ls *MockLoginStore) GetBasicInfoByUserName(context.Context, string) (db.Ge
 	}, nil
 }
 
+// Test login when only email is provided
 func TestLoginEmail(t *testing.T) {
 	_, authmgr, err := testingservices.MakeAuthMgr(testingservices.DEFAULT_PERMISSION_SET)
 	if err != nil {
@@ -69,6 +70,7 @@ func TestLoginEmail(t *testing.T) {
 	}
 }
 
+// Test login when the wrong password is provided.
 func TestLoginWrongPassword(t *testing.T) {
 	_, authmgr, err := testingservices.MakeAuthMgr(testingservices.DEFAULT_PERMISSION_SET)
 	if err != nil {
@@ -97,6 +99,7 @@ func TestLoginWrongPassword(t *testing.T) {
 	}
 }
 
+// Test that login resolves correct permissions.
 func TestLoginPermissions(t *testing.T) {
 	_, authMgr, err := testingservices.MakeAuthMgr(testingservices.DEFAULT_PERMISSION_SET)
 	if err != nil {

@@ -1,3 +1,5 @@
+// Login handles login and logout. It inserts sessions and then returns tokens
+// to clients.
 package login
 
 import (
