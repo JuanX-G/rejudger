@@ -277,6 +277,43 @@ func (q *Queries) GetSubmissionsByAuthor(ctx context.Context, author int64) ([]S
 	return items, nil
 }
 
+const getSubmissionsByAuthorOffset = `-- name: GetSubmissionsByAuthorOffset :many
+SELECT id, created_at, content, author, hash FROM submissions
+WHERE author = $1
+OFFSET  $2
+`
+
+type GetSubmissionsByAuthorOffsetParams struct {
+	Author int64
+	Offset int32
+}
+
+func (q *Queries) GetSubmissionsByAuthorOffset(ctx context.Context, arg GetSubmissionsByAuthorOffsetParams) ([]Submission, error) {
+	rows, err := q.db.Query(ctx, getSubmissionsByAuthorOffset, arg.Author, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Submission
+	for rows.Next() {
+		var i Submission
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.Content,
+			&i.Author,
+			&i.Hash,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getSubmissionsByHash = `-- name: GetSubmissionsByHash :one
 SELECT id, created_at, content, author, hash FROM submissions
 WHERE hash = $1

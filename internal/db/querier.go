@@ -39,6 +39,7 @@ type Querier interface {
 	GetRolePermissions(ctx context.Context, roleID int32) ([]Permission, error)
 	GetStageByVersion(ctx context.Context, version []byte) (Stage, error)
 	GetSubmissionsByAuthor(ctx context.Context, author int64) ([]Submission, error)
+	GetSubmissionsByAuthorOffset(ctx context.Context, arg GetSubmissionsByAuthorOffsetParams) ([]Submission, error)
 	GetSubmissionsByHash(ctx context.Context, hash string) (Submission, error)
 	GetSubmissionsById(ctx context.Context, id int64) (Submission, error)
 	GetUnusedPipelines(ctx context.Context) ([]Pipeline, error)
