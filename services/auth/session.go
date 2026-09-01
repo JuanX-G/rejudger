@@ -1,14 +1,14 @@
 package auth
 
 import (
-	"time"
 	"revit/internal/permissions"
+	"time"
 )
 
 type Session struct {
-	Expiry time.Time
-	UserId int
-	UserName string
+	Expiry      time.Time // Time after which the sessions becomes invalid
+	UserId      int
+	UserName    string
 	Permissions map[string]permissions.PermissionSet //map a context to the permissiosn the user has in it
 }
 

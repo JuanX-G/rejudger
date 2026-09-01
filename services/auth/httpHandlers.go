@@ -6,6 +6,9 @@ import (
 	"revit/internal/permissions"
 )
 
+// Simple auth middleware that only checks the existance of s valid session.
+// For enforcing access control use the [EndpointGuard] object. See:
+// ./endpointLock.go
 func (a *EmbeddedAuthManager) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := r.Header.Get("X-Auth-Token")
