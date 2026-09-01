@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"revit/internal/db"
 	"revit/internal/permissions"
@@ -32,7 +33,6 @@ func main() {
 	if err != nil {
 		fmt.Println("Err: ", err)
 	}
-	fmt.Println(loginMgr)
 
 	mux := http.NewServeMux()
 
@@ -40,4 +40,9 @@ func main() {
 
 	userManagmentSvc.RegisterRoutes(mux)
 	loginMgr.RegisterRoutes(mux)
+
+	err = http.ListenAndServe(":6619", mux)
+	if err != nil {
+		log.Fatalf("Error serving: %s", err)
+	}
 }
