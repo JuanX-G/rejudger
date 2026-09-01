@@ -1,7 +1,9 @@
 package submission
 
 import (
+	"context"
 	"net/http"
+	"revit/internal/logger"
 	"revit/internal/permissions"
 	"revit/services/artifactservice"
 	"revit/services/auth"
@@ -14,19 +16,33 @@ type SubmissionService struct {
 	auth      auth.AuthManager
 	artifacts artifactservice.ArtifactService
 	timeout   time.Duration
+	logger    logger.ScopedLogger
 }
 
 const DEFAULT_SUBMISSION_TIMEOUT = 10
 
-func NewSubmissionService(queries submissionStore, authMgr auth.AuthManager, artifactSvc artifactservice.ArtifactService, appContext string, timeout uint) *SubmissionService {
+func NewSubmissionService(queries submissionStore, authMgr auth.AuthManager, artifactSvc artifactservice.ArtifactService, baseLogger *logger.MultiLogger, appContext string, timeout uint) *SubmissionService {
 	guard := auth.NewEndpointGuard(authMgr, appContext)
-	if timeout != 0 {
-		return &SubmissionService{guard: guard, store: queries, timeout: time.Duration(timeout) * time.Second, auth: authMgr, artifacts: artifactSvc}
-	} else {
-		return &SubmissionService{guard: guard, store: queries, timeout: DEFAULT_SUBMISSION_TIMEOUT * time.Second, auth: authMgr, artifacts: artifactSvc}
+	svc := &SubmissionService{
+		guard:     guard,
+		store:     queries,
+		auth:      authMgr,
+		artifacts: artifactSvc,
+		logger:    *logger.NewScopedLogger(baseLogger, "submission-service"),
 	}
+	if timeout != 0 {
+		svc.timeout = time.Duration(timeout) * time.Second
+	} else {
+		svc.timeout = DEFAULT_SUBMISSION_TIMEOUT * time.Second
+	}
+	return svc
 }
 
-func (s *SubmissionService) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("POST /submissions/submit", s.guard.Lock(s.HandleSubmission(), permissions.NewPermissionSet("", permissions.PermissionSubmit)))
+func (ss *SubmissionService) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("POST /submissions/submit", ss.guard.Lock(ss.HandleSubmission(), permissions.NewPermissionSet("", permissions.PermissionSubmit)))
+	mux.HandleFunc("POST /submissions/get", ss.guard.Lock(ss.HandleGetSubmissionByAuthor(), permissions.NewPermissionSet("", permissions.PermissionView)))
+}
+
+func (ss *SubmissionService) requestCtx(r *http.Request) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(r.Context(), ss.timeout)
 }
