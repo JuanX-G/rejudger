@@ -2,5 +2,4 @@ Document user managment | id:5c0de59894d45ae2239be692ee4964bcde017365
 Document store | id:609e1e26b5d836c8ad1b64f9d6800f299c23d5b5
 Make config use a mockable store interface | id:67b9084d8cbe0381ace86497b16702411d7316b9
 Document login | id:68b794ff5a55a671904046191345b92fbafc6797
-Document httpHelpers | id:a6cf5862e55b1c8fdd593b9bd092f6b800867cfe
 Document config | id:e24218f7db50833b4e2ba1f6d9332626b7744105
