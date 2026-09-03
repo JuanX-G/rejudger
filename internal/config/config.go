@@ -8,6 +8,7 @@ import (
 	"revit/internal/db"
 	"revit/internal/permissions"
 	"revit/internal/store"
+	"slices"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -165,7 +166,6 @@ func (c *ConfigMgr) syncStageQueriesGetId(ctx context.Context, q db.Querier, sta
 // Sync pipelines to the DB. Inserts pipelines if a new one has been defined or old one modified.
 // Deletes pipelines which are not referenced by any submissions and are not the current state of
 // any of the configured pipelines.
-// TODO: delete unused pipelines
 func (c *ConfigMgr) SyncPipelines(ctx context.Context) error {
 	queryFn := func(q db.Querier) error {
 		for _, p := range c.Pipelines {
@@ -214,6 +214,28 @@ func (c *ConfigMgr) SyncPipelines(ctx context.Context) error {
 				})
 				if err != nil {
 					return err
+				}
+			}
+
+			unusedPipeline, err := q.GetUnusedPipelines(ctx)
+
+			for _, unused := range unusedPipeline {
+				match := false
+				for _, p := range c.Pipelines {
+					ver, err := p.JSON()
+					if err != nil {
+						continue
+					}
+					if slices.Equal(ver, unused.Version) {
+						match = true
+						break
+					}
+				}
+				if !match {
+					err := q.DeletePipelineById(ctx, unused.ID)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}
