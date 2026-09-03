@@ -192,6 +192,7 @@ func TestServiceTimeoutSetting(t *testing.T) {
 	}
 }
 
+// Test fetching all submissions for a user.
 func TestGetSubmission(t *testing.T) {
 	logDest := &services.MockLogDest{}
 	logr, err := logger.MakeDefaultMultiLogger(logDest)
@@ -251,6 +252,70 @@ func TestGetSubmission(t *testing.T) {
 		t.Fatalf("sent offset = %d, email = %s, found: %d submission returned", query.Offset, query.Email, len(resp.Submissions))
 	}
 	if !reflect.DeepEqual(resp.Submissions, DEFAULT_RESP_SUBMISSIONS) {
+		t.Fatalf("found submissions: %+v, expected: %+v", resp.Submissions, DEFAULT_RESP_SUBMISSIONS)
+	}
+}
+
+// Test getting submissions with an offset into the list
+func TestGetSubmissionOffset(t *testing.T) {
+	logDest := &services.MockLogDest{}
+	logr, err := logger.MakeDefaultMultiLogger(logDest)
+	if err != nil {
+		shared.ServiceSetupFail(t, err, "logger")
+	}
+	token, authmgr, err := services.MakeAuthMgr(services.DEFAULT_PERMISSION_SET)
+	if err != nil {
+		shared.ServiceSetupFail(t, err, "auth")
+	}
+	store := &mockSubmissionStore{}
+
+	mux := http.NewServeMux()
+	artifactStore := &services.MockArtifactStore{}
+
+	artifactService := services.NewMockArtifactService(artifactStore)
+	artifactService.ExpectedArtifacts = make(chan services.ExpectedMsg, 8)
+	defer close(artifactService.ExpectedArtifacts)
+	service := NewSubmissionService(store, authmgr, artifactService, logr, services.DEFAULT_APPCONTEXT, 0)
+	service.RegisterRoutes(mux)
+
+	query := GetSubmissionByAuthorQuery{Email: services.DEFAULT_EMAIL, Offset: 1}
+	b, err := json.Marshal(query)
+	if err != nil {
+		shared.OperationFail(t, err, "json marshalling of struct GetSubmissionByAuthorQuery")
+	}
+
+	reader := bytes.NewReader(b)
+
+	req := httptest.NewRequest(http.MethodPost, "/submissions/get", reader)
+	req.Header.Add("X-Auth-Token", token)
+
+	rec := httptest.NewRecorder()
+
+	mux.ServeHTTP(rec, req)
+
+	res := rec.Result()
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		shared.WrongHttpCode(t, http.StatusOK, res.StatusCode)
+	}
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		shared.OperationFail(t, err, "io.ReadAll of response body")
+	}
+	var resp GetSubmissionResponse
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		shared.OperationFail(t, err, "json unmarshaling of response body")
+	}
+	if !resp.Success {
+		t.Fatalf("expected response to report success = %t, found: %t", true, resp.Success)
+	}
+	if len(resp.Submissions) != 1 {
+		t.Fatalf("sent offset = %d, email = %s, found: %d submission returned", query.Offset, query.Email, len(resp.Submissions))
+	}
+	if !reflect.DeepEqual(resp.Submissions, []Submission{DEFAULT_RESP_SUBMISSION_2}) {
 		t.Fatalf("found submissions: %+v, expected: %+v", resp.Submissions, DEFAULT_RESP_SUBMISSIONS)
 	}
 }
