@@ -3,7 +3,9 @@ CREATE TABLE submissions (
     created_at TIMESTAMP DEFAULT NOW(),
     content TEXT NOT NULL,
     author BIGINT NOT NULL REFERENCES users(id),
-    hash VARCHAR(128) NOT NULL UNIQUE
+    hash VARCHAR(128) NOT NULL UNIQUE,
+    pipeline BIGINT NOT NULL REFERENCES pipelines(id),
+    pipeline_stage BIGINT NOT NULL REFERENCES pipeline_stages(id)
 );
 
 CREATE TABLE plus_ones (

@@ -22,6 +22,7 @@ type Pipeline struct {
 }
 
 type PipelineStage struct {
+	ID         int64
 	PipelineID int64
 	StageID    int64
 	Position   int32
@@ -55,11 +56,13 @@ type Stage struct {
 }
 
 type Submission struct {
-	ID        int64
-	CreatedAt pgtype.Timestamp
-	Content   string
-	Author    int64
-	Hash      string
+	ID            int64
+	CreatedAt     pgtype.Timestamp
+	Content       string
+	Author        int64
+	Hash          string
+	Pipeline      int64
+	PipelineStage int64
 }
 
 type SubmissionArtifact struct {

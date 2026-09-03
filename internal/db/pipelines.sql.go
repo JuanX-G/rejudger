@@ -11,6 +11,31 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const deletePipelineById = `-- name: DeletePipelineById :exec
+DELETE FROM pipelines
+WHERE id = $1
+`
+
+func (q *Queries) DeletePipelineById(ctx context.Context, id int64) error {
+	_, err := q.db.Exec(ctx, deletePipelineById, id)
+	return err
+}
+
+const getHowManyUseByPipelineId = `-- name: GetHowManyUseByPipelineId :one
+SELECT COUNT(s.id)
+FROM submissions s
+JOIN pipelines p
+    ON s.pipeline = p.id
+WHERE p.id = $1
+`
+
+func (q *Queries) GetHowManyUseByPipelineId(ctx context.Context, id int64) (int64, error) {
+	row := q.db.QueryRow(ctx, getHowManyUseByPipelineId, id)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const getPipelineByVersion = `-- name: GetPipelineByVersion :one
 SELECT id, name, version, description FROM pipelines
 WHERE version = $1
@@ -59,6 +84,30 @@ func (q *Queries) GetPipelineStages(ctx context.Context, pipelineID int64) ([]St
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPipelinesIds = `-- name: GetPipelinesIds :many
+SELECT id FROM pipelines
+`
+
+func (q *Queries) GetPipelinesIds(ctx context.Context) ([]int64, error) {
+	rows, err := q.db.Query(ctx, getPipelinesIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

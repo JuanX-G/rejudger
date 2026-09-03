@@ -247,7 +247,7 @@ func (q *Queries) GetNewestArtifact(ctx context.Context, arg GetNewestArtifactPa
 }
 
 const getSubmissionsByAuthor = `-- name: GetSubmissionsByAuthor :many
-SELECT id, created_at, content, author, hash FROM submissions
+SELECT id, created_at, content, author, hash, pipeline, pipeline_stage FROM submissions
 WHERE author = $1
 `
 
@@ -266,6 +266,8 @@ func (q *Queries) GetSubmissionsByAuthor(ctx context.Context, author int64) ([]S
 			&i.Content,
 			&i.Author,
 			&i.Hash,
+			&i.Pipeline,
+			&i.PipelineStage,
 		); err != nil {
 			return nil, err
 		}
@@ -278,7 +280,7 @@ func (q *Queries) GetSubmissionsByAuthor(ctx context.Context, author int64) ([]S
 }
 
 const getSubmissionsByAuthorOffset = `-- name: GetSubmissionsByAuthorOffset :many
-SELECT id, created_at, content, author, hash FROM submissions
+SELECT id, created_at, content, author, hash, pipeline, pipeline_stage FROM submissions
 WHERE author = $1
 OFFSET  $2
 `
@@ -303,6 +305,8 @@ func (q *Queries) GetSubmissionsByAuthorOffset(ctx context.Context, arg GetSubmi
 			&i.Content,
 			&i.Author,
 			&i.Hash,
+			&i.Pipeline,
+			&i.PipelineStage,
 		); err != nil {
 			return nil, err
 		}
@@ -315,7 +319,7 @@ func (q *Queries) GetSubmissionsByAuthorOffset(ctx context.Context, arg GetSubmi
 }
 
 const getSubmissionsByHash = `-- name: GetSubmissionsByHash :one
-SELECT id, created_at, content, author, hash FROM submissions
+SELECT id, created_at, content, author, hash, pipeline, pipeline_stage FROM submissions
 WHERE hash = $1
 `
 
@@ -328,12 +332,14 @@ func (q *Queries) GetSubmissionsByHash(ctx context.Context, hash string) (Submis
 		&i.Content,
 		&i.Author,
 		&i.Hash,
+		&i.Pipeline,
+		&i.PipelineStage,
 	)
 	return i, err
 }
 
 const getSubmissionsById = `-- name: GetSubmissionsById :one
-SELECT id, created_at, content, author, hash FROM submissions
+SELECT id, created_at, content, author, hash, pipeline, pipeline_stage FROM submissions
 WHERE id = $1
 `
 
@@ -346,6 +352,8 @@ func (q *Queries) GetSubmissionsById(ctx context.Context, id int64) (Submission,
 		&i.Content,
 		&i.Author,
 		&i.Hash,
+		&i.Pipeline,
+		&i.PipelineStage,
 	)
 	return i, err
 }

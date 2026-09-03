@@ -19,6 +19,7 @@ type Querier interface {
 	DeleteArtifactByGen(ctx context.Context, arg DeleteArtifactByGenParams) error
 	DeletePermission(ctx context.Context, arg DeletePermissionParams) error
 	DeletePermissionContext(ctx context.Context, argContext string) error
+	DeletePipelineById(ctx context.Context, id int64) error
 	DeletePlusOne(ctx context.Context, arg DeletePlusOneParams) error
 	DeleteRoleByName(ctx context.Context, name string) error
 	DeleteUser(ctx context.Context, id int64) error
@@ -29,11 +30,13 @@ type Querier interface {
 	GetArtifactsBySubmission(ctx context.Context, arg GetArtifactsBySubmissionParams) ([]SubmissionArtifact, error)
 	GetBasicInfoByEmail(ctx context.Context, email pgtype.Text) (GetBasicInfoByEmailRow, error)
 	GetBasicInfoByUserName(ctx context.Context, name string) (GetBasicInfoByUserNameRow, error)
+	GetHowManyUseByPipelineId(ctx context.Context, id int64) (int64, error)
 	GetNewestArtifact(ctx context.Context, arg GetNewestArtifactParams) (SubmissionArtifact, error)
 	GetPermissionByContext(ctx context.Context, argContext string) ([]string, error)
 	GetPermissionId(ctx context.Context, arg GetPermissionIdParams) (int32, error)
 	GetPipelineByVersion(ctx context.Context, version []byte) (Pipeline, error)
 	GetPipelineStages(ctx context.Context, pipelineID int64) ([]Stage, error)
+	GetPipelinesIds(ctx context.Context) ([]int64, error)
 	GetRoleByName(ctx context.Context, name string) (Role, error)
 	GetRoleNames(ctx context.Context) ([]string, error)
 	GetRolePermissions(ctx context.Context, roleID int32) ([]Permission, error)

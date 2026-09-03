@@ -17,6 +17,7 @@ CREATE TABLE stages (
 );
 
 CREATE TABLE pipeline_stages (
+    id          BIGSERIAL PRIMARY KEY,
     pipeline_id BIGINT NOT NULL REFERENCES pipelines(id) ON DELETE CASCADE,
     stage_id    BIGINT NOT NULL REFERENCES stages(id),
     position    INT NOT NULL,
