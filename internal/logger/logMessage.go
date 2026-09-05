@@ -28,6 +28,7 @@ func (lm *LogMessage) String() string {
 
 	sb.WriteString("| message = ")
 	sb.WriteString(lm.Msg)
+	sb.WriteRune('\n')
 	return sb.String()
 }
 

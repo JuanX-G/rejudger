@@ -219,18 +219,22 @@ func (c *ConfigMgr) SyncPipelines(ctx context.Context) error {
 
 			unusedPipeline, err := q.GetUnusedPipelines(ctx)
 
+			// Purge unused pipelines. We must use nested for loops as pipelines contain
+			// slices so can't be map keys.
+			// We do not delete unused an pipeline right away it could be a freshly
+			// configured one.
 			for _, unused := range unusedPipeline {
 				match := false
-				for _, p := range c.Pipelines {
-					ver, err := p.JSON()
+				for range c.Pipelines {
 					if err != nil {
 						continue
 					}
-					if slices.Equal(ver, unused.Version) {
+					if slices.Equal(version, unused.Version) { // compare json versions of the unused pipeline we found
 						match = true
 						break
 					}
 				}
+
 				if !match {
 					err := q.DeletePipelineById(ctx, unused.ID)
 					if err != nil {

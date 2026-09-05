@@ -58,7 +58,7 @@ func (ss *mockSubmissionStore) GetUserByEmail(ctx context.Context, email pgtype.
 	}, nil
 }
 
-func (ss *mockSubmissionStore) GetUserByUserName(ctx context.Context, name string) (db.User, error) {
+func (ss *mockSubmissionStore) GetUserByName(ctx context.Context, name string) (db.User, error) {
 	return db.User{
 		ID:    services.DEFAULT_USERID,
 		Name:  services.DEFAULT_USERNAME,

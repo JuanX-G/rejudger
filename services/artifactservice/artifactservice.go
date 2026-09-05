@@ -30,3 +30,10 @@ func (as *BaseArtifactService) ExpectArtifacts(hashes []string, subHash string, 
 		as.expected[ArtifactRef{hash: h, submisionHash: subHash}] = submissionId
 	}
 }
+
+func NewBaseArtifactService(mgr *artifactmanager.ArtifactManager) *BaseArtifactService {
+	return &BaseArtifactService{
+		expected: make(map[ArtifactRef]int64),
+		mgr:      mgr,
+	}
+}

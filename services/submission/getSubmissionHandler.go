@@ -2,10 +2,12 @@ package submission
 
 import (
 	"encoding/json/v2"
+	"fmt"
 	"net/http"
 	"revit/internal/db"
 	"revit/internal/httpHelpers"
 	"revit/internal/jsonHelpers"
+	"revit/internal/logger"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -55,9 +57,10 @@ func (ss *SubmissionService) HandleGetSubmissionByAuthor() http.HandlerFunc {
 				return
 			}
 		} else if query.UserName != "" {
-			user, err = ss.store.GetUserByUserName(ctx, query.UserName)
+			user, err = ss.store.GetUserByName(ctx, query.UserName)
 			if err != nil {
 				getSubmissionFail(w, "error failed to find user", 500)
+				ss.logger.Log(ctx, fmt.Sprintf("error retriving user from the db, error: %+v", err), logger.LogLevelError)
 				return
 			}
 		} else {
@@ -71,6 +74,7 @@ func (ss *SubmissionService) HandleGetSubmissionByAuthor() http.HandlerFunc {
 		submissions, err := ss.store.GetSubmissionsByAuthorOffset(ctx, db.GetSubmissionsByAuthorOffsetParams{Author: user.ID, Offset: int32(query.Offset)})
 		if err != nil {
 			getSubmissionFail(w, "internal server error", 500)
+			ss.logger.Log(ctx, fmt.Sprintf("error retriving submissions from the db, error: %+v", err), logger.LogLevelError)
 			return
 		}
 

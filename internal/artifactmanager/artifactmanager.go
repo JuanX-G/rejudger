@@ -34,6 +34,10 @@ type ArtifactManager struct {
 	basePath string
 }
 
+func NewArtifactManager(store store.Store) *ArtifactManager {
+	return &ArtifactManager{store: store}
+}
+
 var ErrArtifactDoesNotExist = errors.New("error artifacts does not exist")
 var ErrInvalidFileType = errors.New("error invalid file type")
 var ErrInvalidRevision = errors.New("error invalid revision")
