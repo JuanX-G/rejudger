@@ -7,6 +7,7 @@ import (
 
 	db "revit/internal/db"
 	"revit/internal/jsonHelpers"
+	"revit/internal/permissions"
 	"revit/internal/store"
 	"revit/services/auth"
 
@@ -17,19 +18,19 @@ import (
 const DEFAULT_USER_MANAGMENT_TIMEOUT = 10
 
 type UserManagementService struct {
-	guard *auth.EndpointGuard
-	store *store.Store
+	guard   *auth.EndpointGuard
+	store   store.Store
 	timeout time.Duration
 }
 
 func (s *UserManagementService) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("POST /magament/users/get", s.guard.LockRead(s.getUserHandler()))
-	mux.HandleFunc("POST /managment/users/add", s.guard.LockWrite(s.addUserHandler()))
-	mux.HandleFunc("POST /magament/users/delete", s.guard.LockWrite(s.deleteUserHandler()))
-	mux.HandleFunc("POST /magament/users/add_role", s.guard.LockWrite(s.addToRoleHandler()))
+	mux.HandleFunc("POST /magament/users/get", s.guard.Lock(s.getUserHandler(), permissions.NewPermissionSet("", permissions.PermissionView)))
+	mux.HandleFunc("POST /managment/users/add", s.guard.Lock(s.addUserHandler(), permissions.NewPermissionSet("", permissions.PermissionWrite)))
+	mux.HandleFunc("POST /magament/users/delete", s.guard.Lock(s.deleteUserHandler(), permissions.NewPermissionSet("", permissions.PermissionWrite)))
+	mux.HandleFunc("POST /magament/users/add_role", s.guard.Lock(s.addToRoleHandler(), permissions.NewPermissionSet("", permissions.PermissionWrite)))
 }
 
-func NewUserManagementService(pool *pgxpool.Pool, authMgr *auth.AuthManager, appContext string, timeout uint) (*UserManagementService) {
+func NewUserManagementService(pool *pgxpool.Pool, authMgr auth.AuthManager, appContext string, timeout uint) *UserManagementService {
 	guard := auth.NewEndpointGuard(authMgr, appContext)
 	if timeout != 0 {
 		return &UserManagementService{guard: guard, store: store.NewStore(pool), timeout: time.Duration(timeout) * time.Second}
@@ -47,12 +48,12 @@ func writeUserManagmentFail(w http.ResponseWriter, status int, msg string) {
 }
 
 type UserActionQuery struct {
-	Name string `json:"name"`
-	Email string `json:"email"`
+	Name      string `json:"name"`
+	Email     string `json:"email"`
 	InternaId string `json:"internal_id"`
 }
 
-func getUserDataFromQuery(ctx context.Context, w http.ResponseWriter, queries *db.Queries, query UserActionQuery) (db.User, error) {
+func getUserDataFromQuery(ctx context.Context, w http.ResponseWriter, queries db.Querier, query UserActionQuery) (db.User, error) {
 	var err error
 	var user db.User
 	if query.Email != "" && query.Name == "" {

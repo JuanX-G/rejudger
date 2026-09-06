@@ -8,11 +8,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type Category struct {
-	ID   int32
-	Name string
-}
-
 type Permission struct {
 	ID      int32
 	Action  string
@@ -22,8 +17,21 @@ type Permission struct {
 type Pipeline struct {
 	ID          int64
 	Name        string
-	Version     string
+	Version     []byte
 	Description pgtype.Text
+}
+
+type PipelineStage struct {
+	ID         int64
+	PipelineID int64
+	StageID    int64
+	Position   int32
+}
+
+type PlusOne struct {
+	UserID       int64
+	SubmissionID int64
+	MadeAt       pgtype.Timestamp
 }
 
 type Role struct {
@@ -36,15 +44,35 @@ type RolePermission struct {
 	PermissionID int32
 }
 
-type Section struct {
-	ID       int32
-	Name     string
-	Category pgtype.Int4
+type Stage struct {
+	ID              int64
+	Name            string
+	Version         []byte
+	PlusOneRequired int16
+	Blind           bool
+	SoftVeto        bool
+	HasDeadline     bool
+	DeadlineStr     pgtype.Text
 }
 
-type SectionPipeline struct {
-	SectionID  int32
-	PipelineID int32
+type Submission struct {
+	ID            int64
+	CreatedAt     pgtype.Timestamp
+	Content       string
+	Author        int64
+	Hash          string
+	Pipeline      int64
+	PipelineStage int64
+}
+
+type SubmissionArtifact struct {
+	ID           int64
+	Hash         string
+	Name         string
+	Generation   int32
+	SubmissionID int64
+	FileType     string
+	UploadedAt   pgtype.Timestamp
 }
 
 type User struct {

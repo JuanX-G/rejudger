@@ -4,44 +4,50 @@ import (
 	"strings"
 )
 
+//go:generate stringer -type=ActionPermission -trimprefix=Permission
 type ActionPermission int
 
-//go:generate stringer -type=ActionPermission -trimprefix=Permission
+// Posssible permission for a single appContext.
 const (
-    PermissionPlusOne ActionPermission = iota
-    PermissionSoftVeto
-	PermissionHardVeto
-	PermissionView
-	PermissionSubmit
-	PermissionWrite
-	PermissionUnknownAction
+	PermissionUnknownAction ActionPermission = iota // Invalid state, arises when parsing external strings into permissions
+	PermissionPlusOne                               // Permission to approve a submission
+	PermissionSoftVeto                              // Permission to soft-veto a submission
+	PermissionHardVeto                              // Permission to hard-veto a submission
+	PermissionView                                  // Permission to view all submissions
+	PermissionSubmit                                // Permission to make submissions
+	PermissionWrite                                 // Permission to write to shared resources and configurations in the context
 )
 
+// Parse a permission name as string to a type.
 func ParseActionPermission(s string) (ActionPermission, error) {
 	switch s {
-	case "PlusOne":
+	case PermissionPlusOne.String():
 		return PermissionPlusOne, nil
-	case "SoftVeto":
+	case PermissionSoftVeto.String():
 		return PermissionSoftVeto, nil
-	case "HardVeto":
+	case PermissionHardVeto.String():
 		return PermissionHardVeto, nil
-	case "View":
+	case PermissionView.String():
 		return PermissionView, nil
-	case "Submit":
+	case PermissionSubmit.String():
 		return PermissionSubmit, nil
-	case "Write":
+	case PermissionWrite.String():
 		return PermissionWrite, nil
 	default:
 		return PermissionUnknownAction, PermissionConfigError{errType: PermissionConfigErrorInvalidAction}
 	}
 }
 
+// Struct representing a set of permisions for a certain context in the app.
 type PermissionSet struct {
-	Context string
-	Permissions map[ActionPermission]struct{}
+	Context     string                        // Application context where such permissions hold
+	Permissions map[ActionPermission]struct{} // The permisions held
 }
 
+//go:generate stringer -type=PermissionConfigErrorType -trimprefix=Permission
 type PermissionConfigErrorType int
+
+// Possible errors when parsing the string representation of permissions.
 const (
 	PermissionConfigErrorInvalidString PermissionConfigErrorType = iota
 	PermissionConfigErrorInvalidPermissionSet
@@ -49,14 +55,14 @@ const (
 )
 
 type PermissionConfigError struct {
-	errType PermissionConfigErrorType
+	errType       PermissionConfigErrorType
 	customMessage string
 }
 
 func (p PermissionConfigError) Error() string {
 	switch p.errType {
 	case PermissionConfigErrorInvalidString:
-		return "inavlid string format; possibly missing ':'"
+		return "inavlid string format; possibly missing '::'"
 	case PermissionConfigErrorInvalidPermissionSet:
 		return "inavlid format for the set of permissions"
 	case PermissionConfigErrorInvalidAction:
@@ -66,8 +72,10 @@ func (p PermissionConfigError) Error() string {
 	}
 }
 
+// Make a new permission from a string. Format: <AppContext>::<Permission-list>.
+// The Permission-list should be separated by ',' and can include spaces.
 func NewPermissionSetFromString(s string) (PermissionSet, error) {
-	parts := strings.Split(s, ":")
+	parts := strings.Split(s, "::")
 	if len(parts) != 2 {
 		return PermissionSet{}, PermissionConfigError{errType: PermissionConfigErrorInvalidString}
 	}
@@ -85,10 +93,19 @@ func NewPermissionSetFromString(s string) (PermissionSet, error) {
 	return retSet, nil
 }
 
-func HasPermission(has PermissionSet, req ActionPermission) bool {
-	if _, found := has.Permissions[req]; found {
+// Checks if set has the permission to perform action `req`.
+func HasPermission(set PermissionSet, req ActionPermission) bool {
+	if _, found := set.Permissions[req]; found {
 		return true
 	} else {
 		return false
 	}
+}
+
+func NewPermissionSet(appContext string, actions ...ActionPermission) PermissionSet {
+	out := PermissionSet{Context: appContext, Permissions: make(map[ActionPermission]struct{})}
+	for _, act := range actions {
+		out.Permissions[act] = struct{}{}
+	}
+	return out
 }

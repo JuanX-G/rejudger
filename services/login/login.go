@@ -7,46 +7,35 @@ import (
 	"revit/internal/jsonHelpers"
 	"revit/internal/passwords"
 	"revit/internal/permissions"
-	"revit/internal/store"
-	"revit/services/auth"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type LoginManager struct {
-	authService *auth.AuthManager
-	store *store.Store
-	permissionsMgr *permissions.PermissionsManager
-}
-
-func NewLoginManager(ctx context.Context, pool *pgxpool.Pool, authService *auth.AuthManager, permissionMgr *permissions.PermissionsManager) (*LoginManager, error) {
-	return &LoginManager{authService: authService, store: store.NewStore(pool), permissionsMgr: permissionMgr}, nil
-}
-
-func (l *LoginManager) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("POST /session/login", l.LoginHandler())
-}
-
+// Query for login. If both email and username are provided then the email will
+// be used. If none are provided an error is returned.
 type LoginQuery struct {
-	Password string `json:"password"`
-	Email string `json:"email"`
-	UserName string `json:"user_name"`
+	Password string `json:"password"`  // User password
+	Email    string `json:"email"`     // User email
+	UserName string `json:"user_name"` // User name
 }
 
 type LoginResponse struct {
-	Success bool `json:"sucess"`
-	Token string `json:"token"`
+	Success bool   `json:"sucess"` // True if logging succeeds
+	Token   string `json:"token"`  // Token for the sessions created if login succeeds. Empty on failure
 }
 
+// Use [LoginQuery] to login with this handler. If either email or username
+// is empty, then the non-empty one will be used; if both are empty a error
+// will be sent back. If both are set, email will be used.
 func (l *LoginManager) LoginHandler() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(r.Context(), time.Second * 10)
+		ctx, cancel := context.WithTimeout(r.Context(), time.Second*10)
 		defer cancel()
 
 		var body LoginQuery
 		_, err := httpHelpers.RequestJsonToStruct(r, &body)
+		defer r.Body.Close()
 		if err != nil {
 			jsonHelpers.WriteJSON(w, http.StatusBadRequest, LoginResponse{Success: false})
 			return
@@ -56,7 +45,7 @@ func (l *LoginManager) LoginHandler() http.HandlerFunc {
 		var userName string
 		if body.Email != "" {
 			text := pgtype.Text{String: body.Email, Valid: true}
-			data, err := l.store.Queries.GetBasicInfoByEmail(ctx, text)
+			data, err := l.store.GetBasicInfoByEmail(ctx, text)
 			if err != nil {
 				jsonHelpers.WriteJSON(w, http.StatusInternalServerError, LoginResponse{Success: false})
 				return
@@ -65,7 +54,7 @@ func (l *LoginManager) LoginHandler() http.HandlerFunc {
 			id = int(data.ID)
 			userName = data.Name
 		} else if body.UserName != "" {
-			data, err := l.store.Queries.GetBasicInfoByUserName(ctx, body.UserName)
+			data, err := l.store.GetBasicInfoByUserName(ctx, body.UserName)
 			if err != nil {
 				jsonHelpers.WriteJSON(w, http.StatusInternalServerError, LoginResponse{Success: false})
 				return
@@ -74,8 +63,8 @@ func (l *LoginManager) LoginHandler() http.HandlerFunc {
 			id = int(data.ID)
 			userName = data.Name
 		} else {
-				jsonHelpers.WriteJSON(w, http.StatusBadRequest, LoginResponse{Success: false})
-				return
+			jsonHelpers.WriteJSON(w, http.StatusBadRequest, LoginResponse{Success: false})
+			return
 		}
 
 		ok, err := passwords.VerifyPassword(pass, body.Password)
@@ -84,7 +73,7 @@ func (l *LoginManager) LoginHandler() http.HandlerFunc {
 			return
 		}
 
-		perms, err := l.permissionsMgr.GetUserPermissions(id)
+		perms, err := l.permissionsMgr.GetUserPermissions(ctx, id)
 		if err != nil {
 			jsonHelpers.WriteJSON(w, http.StatusInternalServerError, LoginResponse{Success: false})
 			return

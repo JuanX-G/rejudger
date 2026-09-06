@@ -9,6 +9,7 @@ import (
 func (s *UserManagementService) deleteUserHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var query UserActionQuery
+		defer r.Body.Close()
 		if _, err := httpHelpers.RequestJsonToStruct(r, &query); err != nil {
 			writeUserManagmentFail(w, http.StatusBadRequest, "invalid request")
 			return
@@ -16,12 +17,12 @@ func (s *UserManagementService) deleteUserHandler() http.HandlerFunc {
 		ctx, cancel := s.requestCtx(r)
 		defer cancel()
 
-		queryFn := func(queries *db.Queries) error {
-			user, err := getUserDataFromQuery(ctx, w, s.store.Queries, query)
+		queryFn := func(queries db.Querier) error {
+			user, err := getUserDataFromQuery(ctx, w, s.store.GetQueries(), query)
 			if err != nil {
 				return err
 			}
-			err = s.store.Queries.DeleteUser(ctx, user.ID)
+			err = s.store.GetQueries().DeleteUser(ctx, user.ID)
 			if err != nil {
 				return err
 			}

@@ -8,15 +8,16 @@ import (
 )
 
 type GetUserResponse struct {
-	Name string `json:"name"`
-	Email string `json:"email"`
-	InternaId string `json:"internal_id"`
-	Roles []string `json:"roles"`
+	Name      string   `json:"name"`
+	Email     string   `json:"email"`
+	InternaId string   `json:"internal_id"`
+	Roles     []string `json:"roles"`
 }
 
 func (s *UserManagementService) getUserHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var query UserActionQuery
+		defer r.Body.Close()
 		if _, err := httpHelpers.RequestJsonToStruct(r, &query); err != nil {
 			writeUserManagmentFail(w, http.StatusBadRequest, "invalid request")
 			return
@@ -26,7 +27,7 @@ func (s *UserManagementService) getUserHandler() http.HandlerFunc {
 
 		var user db.User
 		userRoles := []db.Role{}
-		queryFn := func(queries *db.Queries) error {
+		queryFn := func(queries db.Querier) error {
 			user, err := getUserDataFromQuery(ctx, w, queries, query)
 			if err != nil {
 				return err

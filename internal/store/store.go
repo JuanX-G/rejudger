@@ -6,25 +6,31 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"revit/internal/db"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type Store struct {
-	pool    *pgxpool.Pool
-	Queries *db.Queries
+type Store interface {
+	ExecTx(context.Context, func(db db.Querier) error) error
+	GetQueries() db.Querier
 }
 
-func NewStore(pool *pgxpool.Pool) *Store {
-	return &Store{
+type PgxStore struct {
+	pool *pgxpool.Pool
+	db.Querier
+}
+
+func NewStore(pool *pgxpool.Pool) *PgxStore {
+	return &PgxStore{
 		pool:    pool,
-		Queries: db.New(pool),
+		Querier: db.New(pool),
 	}
 }
 
 const MAX_ATTEMPTS = 3
 
-func (s *Store) ExecTx(ctx context.Context, fn func(*db.Queries) error) error {
+func (s *PgxStore) ExecTx(ctx context.Context, fn func(db.Querier) error) error {
 	var lastErr error
 
 	for attempt := 1; attempt <= MAX_ATTEMPTS; attempt++ {
@@ -49,7 +55,11 @@ func (s *Store) ExecTx(ctx context.Context, fn func(*db.Queries) error) error {
 	return fmt.Errorf("exceeded max retry attempts (%d): %w", MAX_ATTEMPTS, lastErr)
 }
 
-func (s *Store) execOnce(ctx context.Context, fn func(*db.Queries) error) error {
+func (s *PgxStore) GetQueries() db.Querier {
+	return s.Querier
+}
+
+func (s *PgxStore) execOnce(ctx context.Context, fn func(db.Querier) error) error {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return wrapStoreError(err)

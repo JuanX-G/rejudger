@@ -2,16 +2,17 @@ package auth
 
 // Possible error types that actions relating to the auth manager can return
 type AuthErrorType int
+
 const (
-	AuthErrorNoSuchSession AuthErrorType = iota // Returned if no session exists for a given token
-	AuthErrorSessionAlreadyExists // Returned upon an attempt to create a session with the same token as an existing session
-	AuthErrorExpiredSession // Returned if the session time out
-	AuthErrorForbidden // Returned if the session does not have the required permissions
+	AuthErrorNoSuchSession        AuthErrorType = iota // Returned if no session exists for a given token
+	AuthErrorSessionAlreadyExists                      // Returned upon an attempt to create a session with the same token as an existing session
+	AuthErrorExpiredSession                            // Returned if the session time out
+	AuthErrorForbidden                                 // Returned if the session does not have the required permissions
 	UnknownAuthError
 )
 
 type AuthError struct {
-	errType AuthErrorType
+	errType       AuthErrorType
 	customMessage string
 }
 
@@ -25,7 +26,7 @@ func (a AuthError) Error() string {
 		return "session has expired"
 	case AuthErrorForbidden:
 		return "session lack necessary permissions"
-	case  UnknownAuthError:
+	case UnknownAuthError:
 		fallthrough
 	default:
 		return "unknown auth error"

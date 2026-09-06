@@ -2,26 +2,27 @@ package userManagmentService
 
 import (
 	"net/http"
+	"revit/internal/db"
 	"revit/internal/httpHelpers"
 	"revit/internal/jsonHelpers"
-	"revit/internal/db"
 )
 
 type addToRoleQuery struct {
-	User UserActionQuery `json:"user"`
-	Roles []string `json:"roles"`
+	User  UserActionQuery `json:"user"`
+	Roles []string        `json:"roles"`
 }
 
 func (s *UserManagementService) addToRoleHandler() func(http.ResponseWriter, *http.Request) {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request)  {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var query addToRoleQuery
+		defer r.Body.Close()
 		if _, err := httpHelpers.RequestJsonToStruct(r, &query); err != nil {
 			writeUserManagmentFail(w, http.StatusBadRequest, "malformed request")
 		}
 		ctx, cancel := s.requestCtx(r)
 		defer cancel()
 
-		queryFn := func(q *db.Queries) error {
+		queryFn := func(q db.Querier) error {
 			roleIds := make([]int32, 0, len(query.Roles))
 			for _, r := range query.Roles {
 				role, err := q.GetRoleByName(ctx, r)
