@@ -20,7 +20,7 @@ type ConfigMgr struct {
 	Base      *BaseConfig
 	Pipelines []Pipeline
 	Roles     []RoleConfig
-	store     store.Store
+	store     ConfigStore
 }
 
 func NewConfigMgr(pool *pgxpool.Pool, fileName string) (*ConfigMgr, error) {
@@ -54,8 +54,7 @@ func NewConfigMgr(pool *pgxpool.Pool, fileName string) (*ConfigMgr, error) {
 	return &ConfigMgr{Base: base, Pipelines: pipelines, Roles: roles, store: store.NewStore(pool)}, nil
 }
 
-// TODO: add deleting roles connected to a user.
-// sync roles from config. Deletes roles not listed in the config and not asigned to any users.
+// Sync roles from config. Deletes roles not listed in the config and not asigned to any users.
 func (c *ConfigMgr) SyncRoles(ctx context.Context) error {
 	confNames := make(map[string]struct{})
 	for _, role := range c.Roles {
@@ -65,14 +64,14 @@ func (c *ConfigMgr) SyncRoles(ctx context.Context) error {
 		}
 	}
 
-	rolesArr, err := c.store.GetQueries().GetUnusedRoles(ctx)
+	rolesArr, err := c.store.GetUnusedRoles(ctx)
 	if err != nil {
 		return err
 	}
 
 	for _, role := range rolesArr {
 		if _, ok := confNames[role.Name]; !ok {
-			err := c.store.GetQueries().DeleteRoleByName(ctx, role.Name)
+			err := c.store.DeleteRoleByName(ctx, role.Name)
 			if err != nil {
 				return err
 			}
