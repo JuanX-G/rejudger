@@ -282,16 +282,17 @@ func (q *Queries) GetSubmissionsByAuthor(ctx context.Context, author int64) ([]S
 const getSubmissionsByAuthorOffset = `-- name: GetSubmissionsByAuthorOffset :many
 SELECT id, created_at, content, author, hash, pipeline, pipeline_stage FROM submissions
 WHERE author = $1
-OFFSET  $2
+OFFSET  $2 LIMIT $3
 `
 
 type GetSubmissionsByAuthorOffsetParams struct {
 	Author int64
 	Offset int32
+	Limit  int32
 }
 
 func (q *Queries) GetSubmissionsByAuthorOffset(ctx context.Context, arg GetSubmissionsByAuthorOffsetParams) ([]Submission, error) {
-	rows, err := q.db.Query(ctx, getSubmissionsByAuthorOffset, arg.Author, arg.Offset)
+	rows, err := q.db.Query(ctx, getSubmissionsByAuthorOffset, arg.Author, arg.Offset, arg.Limit)
 	if err != nil {
 		return nil, err
 	}

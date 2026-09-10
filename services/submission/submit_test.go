@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"revit/internal/config/sharedmodels"
 	"revit/internal/hashing"
 	"revit/internal/logger"
 	shared "revit/internal/sharedtesting"
@@ -240,7 +241,7 @@ func TestGetSubmission(t *testing.T) {
 	if err != nil {
 		shared.OperationFail(t, err, "io.ReadAll of response body")
 	}
-	var resp GetSubmissionResponse
+	var resp GetSubmissionsResponse
 	err = json.Unmarshal(body, &resp)
 	if err != nil {
 		shared.OperationFail(t, err, "json unmarshaling of response body")
@@ -304,7 +305,7 @@ func TestGetSubmissionOffset(t *testing.T) {
 	if err != nil {
 		shared.OperationFail(t, err, "io.ReadAll of response body")
 	}
-	var resp GetSubmissionResponse
+	var resp GetSubmissionsResponse
 	err = json.Unmarshal(body, &resp)
 	if err != nil {
 		shared.OperationFail(t, err, "json unmarshaling of response body")
@@ -315,7 +316,7 @@ func TestGetSubmissionOffset(t *testing.T) {
 	if len(resp.Submissions) != 1 {
 		t.Fatalf("sent offset = %d, email = %s, found: %d submission returned", query.Offset, query.Email, len(resp.Submissions))
 	}
-	if !reflect.DeepEqual(resp.Submissions, []Submission{DEFAULT_RESP_SUBMISSION_2}) {
+	if !reflect.DeepEqual(resp.Submissions, []sharedmodels.Submission{DEFAULT_RESP_SUBMISSION_2}) {
 		t.Fatalf("found submissions: %+v, expected: %+v", resp.Submissions, DEFAULT_RESP_SUBMISSIONS)
 	}
 }
