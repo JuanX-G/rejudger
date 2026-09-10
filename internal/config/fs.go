@@ -9,14 +9,14 @@ import (
 
 type forDirResult struct {
 	fileName string
-	err error
+	err      error
 }
 
 func forDir(dirName string, fn func(*os.File) error) ([]forDirResult, error) {
 	result := []forDirResult{}
 	dir, err := os.ReadDir(dirName)
 	if err != nil {
-		return result, err // TODO: wrap ts
+		return result, err
 	}
 	for _, v := range dir {
 		if v.Type().IsRegular() {
@@ -28,7 +28,7 @@ func forDir(dirName string, fn func(*os.File) error) ([]forDirResult, error) {
 	return result, nil
 }
 
-func forFileRead(fileName string, fn func(*os.File) error) (error) {
+func forFileRead(fileName string, fn func(*os.File) error) error {
 	file, err := os.OpenFile(fileName, os.O_RDONLY, 0744)
 	if err != nil {
 		return err
@@ -41,7 +41,7 @@ func forFileRead(fileName string, fn func(*os.File) error) (error) {
 	return nil
 }
 
-func decodeFile(fileName string, v any) (error) {
+func decodeFile(fileName string, v any) error {
 	file, err := os.OpenFile(fileName, os.O_RDONLY, 0744)
 	if err != nil {
 		return ConfigError{errType: ConfigErrorOpenFile, msg: fmt.Sprintf("config error occured; OpenFile reported: %s", err.Error())}

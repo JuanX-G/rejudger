@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"revit/internal/permissions"
 	"strings"
@@ -9,8 +10,8 @@ import (
 )
 
 type RoleConfig struct {
-	name  string
-	perms []PermissionConfig
+	name  string             `yaml:"name"`
+	perms []PermissionConfig `yaml:"permissions"`
 }
 
 func LoadRolesConfigFromFile(file *os.File) (RoleConfig, error) {
@@ -37,8 +38,10 @@ type PermissionConfig struct {
 func (p *PermissionConfig) ParsePermissionConfig() error {
 	parts := strings.Split(p.permissionStr, "::")
 	if len(parts) != 2 {
-		return ConfigError{}
+		return ConfigError{errType: ConfigErrorInvaidFormatting, msg: fmt.Sprintf(`invalid permission string format,
+			found string: %s, with: %d part when split by '::'`, p.permissionStr, len(parts))}
 	}
+
 	p.context = strings.TrimSpace(parts[0])
 	action, err := permissions.ParseActionPermission(strings.TrimSpace(parts[1]))
 	if err != nil {
