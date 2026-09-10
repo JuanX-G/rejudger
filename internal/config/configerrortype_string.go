@@ -11,11 +11,12 @@ func _() {
 	_ = x[ConfigErrorOpenFile-0]
 	_ = x[ConfigErrorAtoiError-1]
 	_ = x[ConfigErrorDecodeError-2]
+	_ = x[ConfigErrorInvaidFormatting-3]
 }
 
-const _ConfigErrorType_name = "ErrorOpenFileErrorAtoiErrorErrorDecodeError"
+const _ConfigErrorType_name = "ErrorOpenFileErrorAtoiErrorErrorDecodeErrorErrorInvaidFormatting"
 
-var _ConfigErrorType_index = [...]uint8{0, 13, 27, 43}
+var _ConfigErrorType_index = [...]uint8{0, 13, 27, 43, 64}
 
 func (i ConfigErrorType) String() string {
 	idx := int(i) - 0
