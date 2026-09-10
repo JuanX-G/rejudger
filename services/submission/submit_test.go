@@ -241,7 +241,7 @@ func TestGetSubmission(t *testing.T) {
 	if err != nil {
 		shared.OperationFail(t, err, "io.ReadAll of response body")
 	}
-	var resp GetSubmissionResponse
+	var resp GetSubmissionsResponse
 	err = json.Unmarshal(body, &resp)
 	if err != nil {
 		shared.OperationFail(t, err, "json unmarshaling of response body")
@@ -305,7 +305,7 @@ func TestGetSubmissionOffset(t *testing.T) {
 	if err != nil {
 		shared.OperationFail(t, err, "io.ReadAll of response body")
 	}
-	var resp GetSubmissionResponse
+	var resp GetSubmissionsResponse
 	err = json.Unmarshal(body, &resp)
 	if err != nil {
 		shared.OperationFail(t, err, "json unmarshaling of response body")
