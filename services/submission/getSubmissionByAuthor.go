@@ -3,11 +3,11 @@ package submission
 import (
 	"fmt"
 	"net/http"
-	"revit/internal/config/sharedmodels"
 	"revit/internal/db"
 	"revit/internal/httpHelpers"
 	"revit/internal/jsonHelpers"
 	"revit/internal/logger"
+	"revit/internal/sharedmodels"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"

@@ -51,6 +51,8 @@ func (sm *SafeMap[K, V]) Delete(k K) bool {
 }
 
 func (sm *SafeMap[K, V]) Len() int {
+	sm.mu.RLock()
+	defer sm.mu.Unlock()
 	return len(sm.base)
 }
 

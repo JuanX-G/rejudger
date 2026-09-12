@@ -3,10 +3,10 @@ package submission
 import (
 	"fmt"
 	"net/http"
-	"revit/internal/config/sharedmodels"
 	"revit/internal/httpHelpers"
 	"revit/internal/jsonHelpers"
 	"revit/internal/logger"
+	"revit/internal/sharedmodels"
 )
 
 type GetSubmissionByHash struct {

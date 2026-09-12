@@ -1,8 +1,8 @@
 package submission
 
 import (
-	"revit/internal/config/sharedmodels"
 	"revit/internal/db"
+	"revit/internal/sharedmodels"
 	services "revit/internal/testingservices"
 )
 
