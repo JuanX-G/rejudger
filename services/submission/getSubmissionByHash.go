@@ -19,7 +19,7 @@ type GetSubmissionResponse struct {
 	Submission sharedmodels.Submission `json:"submissions"`
 }
 
-func (ss *SubmissionService) HandleGetSubmissionHash() http.HandlerFunc {
+func (ss *SubmissionService) HandleGetSubmissionByHash() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var query GetSubmissionByHash
 		_, err := httpHelpers.RequestJsonToStruct(r, &query)
