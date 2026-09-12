@@ -3,6 +3,7 @@ package submission
 import (
 	"context"
 	"net/http"
+	"revit/internal/jsonHelpers"
 	"revit/internal/logger"
 	"revit/internal/permissions"
 	"revit/services/artifactservice"
@@ -45,4 +46,12 @@ func (ss *SubmissionService) RegisterRoutes(mux *http.ServeMux) {
 
 func (ss *SubmissionService) requestCtx(r *http.Request) (context.Context, context.CancelFunc) {
 	return context.WithTimeout(r.Context(), ss.timeout)
+}
+
+func getSubmissionFail(w http.ResponseWriter, msg string, code int) {
+	res := GetSubmissionResponse{
+		Success: false,
+		Msg:     msg,
+	}
+	jsonHelpers.WriteJSON(w, code, res)
 }

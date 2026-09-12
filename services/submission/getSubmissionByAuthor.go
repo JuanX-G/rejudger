@@ -97,18 +97,6 @@ func (ss *SubmissionService) HandleGetSubmissionByAuthor() http.HandlerFunc {
 	}
 }
 
-func getSubmissionFail(w http.ResponseWriter, msg string, code int) {
-	res := GetSubmissionResponse{
-		Success: false,
-		Msg:     msg,
-	}
-	bytes, err := json.Marshal(res)
-	if err != nil {
-		http.Error(w, "could not marshall json", 500)
-	}
-	jsonHelpers.WriteJSON(w, code, bytes)
-}
-
 type GetSubmissionAfterByAuthorQuery struct {
 	Email    string    `json:"email"`
 	UserName string    `json:"user_name"`
