@@ -11,9 +11,9 @@ func NewSafeMap[K comparable, V any]() *SafeMap[K, V] {
 	return &SafeMap[K, V]{mu: sync.RWMutex{}, base: make(map[K]V)}
 }
 
-func (sm *SafeMap[K, V]) WithRlock(k K, fun func(V)) bool {
+func (sm *SafeMap[K, V]) WithRLock(k K, fun func(V)) bool {
 	sm.mu.RLock()
-	defer sm.mu.Unlock()
+	defer sm.mu.RUnlock()
 	if v, ok := sm.base[k]; !ok {
 		return false
 	} else {
@@ -52,7 +52,7 @@ func (sm *SafeMap[K, V]) Delete(k K) bool {
 
 func (sm *SafeMap[K, V]) Len() int {
 	sm.mu.RLock()
-	defer sm.mu.Unlock()
+	defer sm.mu.RUnlock()
 	return len(sm.base)
 }
 
