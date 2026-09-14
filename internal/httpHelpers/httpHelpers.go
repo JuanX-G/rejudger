@@ -17,3 +17,11 @@ func RequestJsonToStruct[T any](r *http.Request, v T) (T, error) {
 type RouteRegistrar interface {
 	RegisterRoutes(mux *http.ServeMux)
 }
+
+func CapInt(i, cap int) int {
+	if i > cap {
+		return cap
+	} else {
+		return i
+	}
+}

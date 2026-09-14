@@ -6,15 +6,17 @@ import (
 
 //go:generate stringer -type=ConfigErrorType -trimprefix=Config
 type ConfigErrorType int
+
 const (
 	ConfigErrorOpenFile ConfigErrorType = iota
 	ConfigErrorAtoiError
 	ConfigErrorDecodeError
+	ConfigErrorInvaidFormatting
 )
 
 type ConfigError struct {
 	errType ConfigErrorType
-	msg string
+	msg     string
 }
 
 func (e ConfigError) Error() string {

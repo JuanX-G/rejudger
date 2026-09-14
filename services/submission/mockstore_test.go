@@ -2,6 +2,7 @@ package submission
 
 import (
 	"context"
+	"fmt"
 	"revit/internal/db"
 	services "revit/internal/testingservices"
 
@@ -15,6 +16,7 @@ type InsertionNotification struct {
 
 type mockSubmissionStore struct {
 	insertNotify chan InsertionNotification
+	AcceptAll    bool
 }
 
 func (ss *mockSubmissionStore) GetUserById(ctx context.Context, id int64) (db.User, error) {
@@ -31,8 +33,22 @@ func (ss *mockSubmissionStore) InsertSubmission(ctx context.Context, arg db.Inse
 }
 
 func (ss *mockSubmissionStore) GetSubmissionsByHash(ctx context.Context, hash string) (db.Submission, error) {
+	if ss.AcceptAll {
+		return db.Submission{
+			ID:      123,
+			Content: DEFAULT_RESP_SUBMISSION_1.Content,
+			Author:  DEFAULT_SUBMISSION_1.Author,
+			Hash:    DEFAULT_RESP_SUBMISSION_1.Hash,
+		}, nil
+	}
+	if hash != DEFAULT_RESP_SUBMISSION_1.Hash {
+		return db.Submission{}, fmt.Errorf("not found")
+	}
 	return db.Submission{
-		ID: 123,
+		ID:      123,
+		Content: DEFAULT_RESP_SUBMISSION_1.Content,
+		Author:  DEFAULT_SUBMISSION_1.Author,
+		Hash:    DEFAULT_RESP_SUBMISSION_1.Hash,
 	}, nil
 }
 

@@ -18,7 +18,8 @@ WHERE author = $1;
 -- name: GetSubmissionsByAuthorOffset :many
 SELECT * FROM submissions
 WHERE author = $1
-OFFSET  $2;
+OFFSET  $2
+LIMIT $3;
 
 -- name: GetSubmissionsById :one
 SELECT * FROM submissions
