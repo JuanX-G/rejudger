@@ -154,6 +154,7 @@ func (c *ConfigMgr) syncStageQueriesGetId(ctx context.Context, q db.Querier, sta
 			String: stage.DeadlineStr,
 			Valid:  stage.DeadlineStr != "",
 		},
+		Final: stage.Final,
 	})
 	if err != nil {
 		return 0, err
@@ -220,8 +221,8 @@ func (c *ConfigMgr) SyncPipelines(ctx context.Context) error {
 
 			// Purge unused pipelines. We must use nested for loops as pipelines contain
 			// slices so can't be map keys.
-			// We do not delete unused an pipeline right away it could be a freshly
-			// configured one.
+			// We do not delete unused an unused pipeline right away as it could be a
+			// freshly configured one.
 			for _, unused := range unusedPipeline {
 				match := false
 				for range c.Pipelines {

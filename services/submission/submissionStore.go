@@ -15,4 +15,8 @@ type submissionStore interface {
 	InsertSubmission(context.Context, db.InsertSubmissionParams) error
 	GetSubmissionsByHash(context.Context, string) (db.Submission, error)
 	GetSubmissionsByAuthor(ctx context.Context, author int64) ([]db.Submission, error)
+	AddPlusOne(ctx context.Context, arg db.AddPlusOneParams) error
+	CountPlusOnes(ctx context.Context, submissionID int64) (int64, error)
+	GetPipelineStage(ctx context.Context, arg db.GetPipelineStageParams) (db.PipelineStage, error)
+	GetStageById(ctx context.Context, id int64) (db.Stage, error)
 }

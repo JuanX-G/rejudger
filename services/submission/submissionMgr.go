@@ -8,6 +8,7 @@ import (
 	"revit/internal/permissions"
 	"revit/services/artifactservice"
 	"revit/services/auth"
+	"revit/services/publishingservice"
 	"time"
 )
 
@@ -18,10 +19,12 @@ type SubmissionService struct {
 	artifacts artifactservice.ArtifactService
 	timeout   time.Duration
 	logger    logger.ScopedLogger
+	publisher publishingservice.PublishingService
 }
 
 const DEFAULT_SUBMISSION_TIMEOUT = 10
 
+// TODO: allow passing a publisher.
 func NewSubmissionService(queries submissionStore, authMgr auth.AuthManager, artifactSvc artifactservice.ArtifactService, baseLogger *logger.MultiLogger, appContext string, timeout uint) *SubmissionService {
 	guard := auth.NewEndpointGuard(authMgr, appContext)
 	svc := &SubmissionService{

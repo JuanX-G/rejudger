@@ -53,8 +53,30 @@ func (q *Queries) GetPipelineByVersion(ctx context.Context, version []byte) (Pip
 	return i, err
 }
 
+const getPipelineStage = `-- name: GetPipelineStage :one
+SELECT id, pipeline_id, stage_id, position FROM pipeline_stages
+WHERE pipeline_id = $1 AND position = $2
+`
+
+type GetPipelineStageParams struct {
+	PipelineID int64
+	Position   int32
+}
+
+func (q *Queries) GetPipelineStage(ctx context.Context, arg GetPipelineStageParams) (PipelineStage, error) {
+	row := q.db.QueryRow(ctx, getPipelineStage, arg.PipelineID, arg.Position)
+	var i PipelineStage
+	err := row.Scan(
+		&i.ID,
+		&i.PipelineID,
+		&i.StageID,
+		&i.Position,
+	)
+	return i, err
+}
+
 const getPipelineStages = `-- name: GetPipelineStages :many
-SELECT s.id, s.name, s.version, s.plus_one_required, s.blind, s.soft_veto, s.has_deadline, s.deadline_str
+SELECT s.id, s.name, s.version, s.plus_one_required, s.blind, s.soft_veto, s.has_deadline, s.deadline_str, s.final
 FROM pipeline_stages ps
 JOIN stages s
     ON s.id = ps.stage_id
@@ -80,6 +102,7 @@ func (q *Queries) GetPipelineStages(ctx context.Context, pipelineID int64) ([]St
 			&i.SoftVeto,
 			&i.HasDeadline,
 			&i.DeadlineStr,
+			&i.Final,
 		); err != nil {
 			return nil, err
 		}
@@ -115,8 +138,30 @@ func (q *Queries) GetPipelinesIds(ctx context.Context) ([]int64, error) {
 	return items, nil
 }
 
+const getStageById = `-- name: GetStageById :one
+SELECT id, name, version, plus_one_required, blind, soft_veto, has_deadline, deadline_str, final FROM stages
+WHERE id = $1
+`
+
+func (q *Queries) GetStageById(ctx context.Context, id int64) (Stage, error) {
+	row := q.db.QueryRow(ctx, getStageById, id)
+	var i Stage
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Version,
+		&i.PlusOneRequired,
+		&i.Blind,
+		&i.SoftVeto,
+		&i.HasDeadline,
+		&i.DeadlineStr,
+		&i.Final,
+	)
+	return i, err
+}
+
 const getStageByVersion = `-- name: GetStageByVersion :one
-SELECT id, name, version, plus_one_required, blind, soft_veto, has_deadline, deadline_str FROM stages
+SELECT id, name, version, plus_one_required, blind, soft_veto, has_deadline, deadline_str, final FROM stages
 WHERE version = $1
 `
 
@@ -132,6 +177,7 @@ func (q *Queries) GetStageByVersion(ctx context.Context, version []byte) (Stage,
 		&i.SoftVeto,
 		&i.HasDeadline,
 		&i.DeadlineStr,
+		&i.Final,
 	)
 	return i, err
 }
@@ -192,10 +238,11 @@ INSERT INTO stages (
     blind,
     soft_veto,
     has_deadline,
-    deadline_str
+    deadline_str,
+    final
 )
-VALUES ($1,$2,$3,$4,$5,$6,$7)
-RETURNING id, name, version, plus_one_required, blind, soft_veto, has_deadline, deadline_str
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+RETURNING id, name, version, plus_one_required, blind, soft_veto, has_deadline, deadline_str, final
 `
 
 type InsertStageParams struct {
@@ -206,6 +253,7 @@ type InsertStageParams struct {
 	SoftVeto        bool
 	HasDeadline     bool
 	DeadlineStr     pgtype.Text
+	Final           bool
 }
 
 func (q *Queries) InsertStage(ctx context.Context, arg InsertStageParams) (Stage, error) {
@@ -217,6 +265,7 @@ func (q *Queries) InsertStage(ctx context.Context, arg InsertStageParams) (Stage
 		arg.SoftVeto,
 		arg.HasDeadline,
 		arg.DeadlineStr,
+		arg.Final,
 	)
 	var i Stage
 	err := row.Scan(
@@ -228,6 +277,7 @@ func (q *Queries) InsertStage(ctx context.Context, arg InsertStageParams) (Stage
 		&i.SoftVeto,
 		&i.HasDeadline,
 		&i.DeadlineStr,
+		&i.Final,
 	)
 	return i, err
 }

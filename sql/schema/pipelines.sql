@@ -13,7 +13,8 @@ CREATE TABLE stages (
     blind BOOL NOT NULL,
     soft_veto BOOL NOT NULL,
     has_deadline BOOL NOT NULL,
-    deadline_str TEXT
+    deadline_str TEXT,
+    final BOOL NOT NULL
 );
 
 CREATE TABLE pipeline_stages (
