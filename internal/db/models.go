@@ -53,6 +53,7 @@ type Stage struct {
 	SoftVeto        bool
 	HasDeadline     bool
 	DeadlineStr     pgtype.Text
+	Final           bool
 }
 
 type Submission struct {
@@ -62,7 +63,7 @@ type Submission struct {
 	Author        int64
 	Hash          string
 	Pipeline      int64
-	PipelineStage int64
+	PipelineStage int32
 }
 
 type SubmissionArtifact struct {

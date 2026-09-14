@@ -5,7 +5,7 @@ CREATE TABLE submissions (
     author BIGINT NOT NULL REFERENCES users(id),
     hash VARCHAR(128) NOT NULL UNIQUE,
     pipeline BIGINT NOT NULL REFERENCES pipelines(id),
-    pipeline_stage BIGINT NOT NULL REFERENCES pipeline_stages(id)
+    pipeline_stage INT NOT NULL REFERENCES pipeline_stages(id)
 );
 
 CREATE TABLE plus_ones (

@@ -6,9 +6,10 @@ INSERT INTO stages (
     blind,
     soft_veto,
     has_deadline,
-    deadline_str
+    deadline_str,
+    final
 )
-VALUES ($1,$2,$3,$4,$5,$6,$7)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
 RETURNING *;
 
 -- name: InsertPipeline :one
@@ -40,6 +41,10 @@ ORDER BY ps.position;
 SELECT * FROM stages
 WHERE version = $1;
 
+-- name: GetStageById :one
+SELECT * FROM stages
+WHERE id = $1;
+
 
 -- name: GetPipelineByVersion :one
 SELECT * FROM pipelines
@@ -58,3 +63,7 @@ WHERE p.id = $1;
 
 -- name: GetPipelinesIds :many
 SELECT id FROM pipelines;
+
+-- name: GetPipelineStage :one
+SELECT * FROM pipeline_stages
+WHERE pipeline_id = $1 AND position = $2;

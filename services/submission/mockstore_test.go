@@ -81,3 +81,19 @@ func (ss *mockSubmissionStore) GetUserByName(ctx context.Context, name string) (
 		Email: pgtype.Text{String: services.DEFAULT_EMAIL, Valid: true},
 	}, nil
 }
+
+func (ss *mockSubmissionStore) AddPlusOne(ctx context.Context, args db.AddPlusOneParams) error {
+	return nil
+}
+
+func (ss *mockSubmissionStore) CountPlusOnes(ctx context.Context, submissionID int64) (int64, error) {
+	return 1, nil
+}
+
+func (ss *mockSubmissionStore) GetPipelineStage(ctx context.Context, arg db.GetPipelineStageParams) (db.PipelineStage, error) {
+	return db.PipelineStage{}, nil
+}
+
+func (ss *mockSubmissionStore) GetStageById(ctx context.Context, id int64) (db.Stage, error) {
+	return db.Stage{}, nil
+}

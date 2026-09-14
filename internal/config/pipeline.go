@@ -23,6 +23,9 @@ func LoadPipelineConfig(fileName string) (*Pipeline, error) {
 		if err := pipeline.Stages[i].Deadline.ParseDeadline(); err != nil {
 			return nil, err
 		}
+		if i+1 == len(pipeline.Stages) {
+			pipeline.Stages[i].Final = true
+		}
 	}
 	return &pipeline, nil
 }
@@ -40,6 +43,7 @@ type PipelineStage struct {
 	DeadlineStr      string `yaml:"deadline" json:"deadline"`
 
 	Deadline StageDeadline `json:"-"`
+	Final    bool          `json:"-"`
 }
 
 func boolToString(b bool) string {
