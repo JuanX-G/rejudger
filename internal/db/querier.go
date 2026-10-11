@@ -11,10 +11,12 @@ import (
 )
 
 type Querier interface {
+	AddOneToSubmissionStageById(ctx context.Context, id int64) error
 	AddPermissionToRole(ctx context.Context, arg AddPermissionToRoleParams) error
 	AddPlusOne(ctx context.Context, arg AddPlusOneParams) error
 	AddUserToRole(ctx context.Context, arg AddUserToRoleParams) error
-	CountPlusOnes(ctx context.Context, submissionID int64) (int64, error)
+	AdvanceSubmissionToNextStage(ctx context.Context, id int64) (int64, error)
+	CountPlusOnes(ctx context.Context, arg CountPlusOnesParams) (int64, error)
 	DeleteArtifact(ctx context.Context, arg DeleteArtifactParams) error
 	DeleteArtifactByGen(ctx context.Context, arg DeleteArtifactByGenParams) error
 	DeletePermission(ctx context.Context, arg DeletePermissionParams) error
@@ -30,6 +32,7 @@ type Querier interface {
 	GetArtifactsBySubmission(ctx context.Context, arg GetArtifactsBySubmissionParams) ([]SubmissionArtifact, error)
 	GetBasicInfoByEmail(ctx context.Context, email pgtype.Text) (GetBasicInfoByEmailRow, error)
 	GetBasicInfoByUserName(ctx context.Context, name string) (GetBasicInfoByUserNameRow, error)
+	GetDeadlineByStageId(ctx context.Context, stageID int64) (StageDeadline, error)
 	GetHowManyUseByPipelineId(ctx context.Context, id int64) (int64, error)
 	GetNewestArtifact(ctx context.Context, arg GetNewestArtifactParams) (SubmissionArtifact, error)
 	GetPermissionByContext(ctx context.Context, argContext string) ([]string, error)
@@ -47,6 +50,8 @@ type Querier interface {
 	GetSubmissionsByAuthorOffset(ctx context.Context, arg GetSubmissionsByAuthorOffsetParams) ([]Submission, error)
 	GetSubmissionsByHash(ctx context.Context, hash string) (Submission, error)
 	GetSubmissionsById(ctx context.Context, id int64) (Submission, error)
+	GetSubmissionsByStageId(ctx context.Context, stageID int64) ([]Submission, error)
+	GetSubmissionsInStage(ctx context.Context, arg GetSubmissionsInStageParams) ([]GetSubmissionsInStageRow, error)
 	GetUnusedPipelines(ctx context.Context) ([]Pipeline, error)
 	GetUnusedRoles(ctx context.Context) ([]Role, error)
 	GetUserByEmail(ctx context.Context, email pgtype.Text) (User, error)
@@ -55,16 +60,20 @@ type Querier interface {
 	GetUserByName(ctx context.Context, name string) (User, error)
 	GetUserPermissions(ctx context.Context, userID int64) ([]Permission, error)
 	GetUserRoles(ctx context.Context, userID int64) ([]Role, error)
+	GetVetosBySubmissionId(ctx context.Context, submissionID int64) ([]Veto, error)
 	InsertArtifact(ctx context.Context, arg InsertArtifactParams) error
 	InsertPermission(ctx context.Context, arg InsertPermissionParams) error
 	InsertPipeline(ctx context.Context, arg InsertPipelineParams) (Pipeline, error)
+	// Insert a stage into a pipeline
 	InsertPipelineStage(ctx context.Context, arg InsertPipelineStageParams) error
 	InsertRole(ctx context.Context, name string) error
 	InsertStage(ctx context.Context, arg InsertStageParams) (Stage, error)
+	InsertStageDeadline(ctx context.Context, arg InsertStageDeadlineParams) error
 	InsertSubmission(ctx context.Context, arg InsertSubmissionParams) error
 	InsertUser(ctx context.Context, arg InsertUserParams) error
 	RemovePermissionFromRole(ctx context.Context, arg RemovePermissionFromRoleParams) error
 	ResetPlusOneForSubmission(ctx context.Context, submissionID int64) error
+	SetDeadlineLastRanToNowByStageId(ctx context.Context, stageID int64) error
 }
 
 var _ Querier = (*Queries)(nil)
