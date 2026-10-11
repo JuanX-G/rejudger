@@ -45,7 +45,14 @@ func main() {
 
 	userManagmentSvc := userManagmentService.NewUserManagementService(pool, authMgr, "userManagment", 12)
 
-	submissionSvc := submission.NewSubmissionService(store, authMgr, artifactSvc, loggerMgr, "tech", 0)
+	submissionSvc := submission.NewSubmissionService(submission.SubmissionServiceParams{
+		Store:       store,
+		AuthMgr:     authMgr,
+		ArtifactSvc: artifactSvc,
+		BaseLogger:  loggerMgr,
+		AppContext:  "tech",
+		Timeout:     0,
+	})
 
 	userManagmentSvc.RegisterRoutes(mux)
 	submissionSvc.RegisterRoutes(mux)
