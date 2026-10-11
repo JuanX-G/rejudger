@@ -22,18 +22,6 @@ WHERE id = $1;
 SELECT password, id, name FROM users
 WHERE name = $1 LIMIT 1;
 
--- name: InsertUser :exec
-INSERT INTO users (
-  name, internal_id, password, email
-) VALUES (
-  $1, $2, $3, $4
-)
-RETURNING *;
-
--- name: DeleteUser :exec
-DELETE FROM users
-WHERE id = $1;
-
 -- name: GetUserPermissions :many
 SELECT DISTINCT p.*
 FROM permissions p
