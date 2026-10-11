@@ -17,6 +17,7 @@ type InsertionNotification struct {
 type mockSubmissionStore struct {
 	insertNotify chan InsertionNotification
 	AcceptAll    bool
+	StageId      int
 }
 
 func (ss *mockSubmissionStore) GetUserById(ctx context.Context, id int64) (db.User, error) {
@@ -86,7 +87,7 @@ func (ss *mockSubmissionStore) AddPlusOne(ctx context.Context, args db.AddPlusOn
 	return nil
 }
 
-func (ss *mockSubmissionStore) CountPlusOnes(ctx context.Context, submissionID int64) (int64, error) {
+func (ss *mockSubmissionStore) CountPlusOnes(ctx context.Context, arg db.CountPlusOnesParams) (int64, error) {
 	return 1, nil
 }
 
@@ -96,4 +97,13 @@ func (ss *mockSubmissionStore) GetPipelineStage(ctx context.Context, arg db.GetP
 
 func (ss *mockSubmissionStore) GetStageById(ctx context.Context, id int64) (db.Stage, error) {
 	return db.Stage{}, nil
+}
+
+func (ss *mockSubmissionStore) AddOneToSubmissionStageById(ctx context.Context, id int64) error {
+	ss.StageId++
+	return nil
+}
+
+func (ss *mockSubmissionStore) GetVetosBySubmissionId(ctx context.Context, submissionID int64) ([]db.Veto, error) {
+	return []db.Veto{}, nil
 }
