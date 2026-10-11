@@ -7,11 +7,13 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Result of running for dir. Filename and the corresponding error.
 type forDirResult struct {
 	fileName string
 	err      error
 }
 
+// Run the function fn on every file in the specified directory.
 func forDir(dirName string, fn func(*os.File) error) ([]forDirResult, error) {
 	result := []forDirResult{}
 	dir, err := os.ReadDir(dirName)
@@ -28,6 +30,7 @@ func forDir(dirName string, fn func(*os.File) error) ([]forDirResult, error) {
 	return result, nil
 }
 
+// Open the file and apply fn to the returned to os.File.
 func forFileRead(fileName string, fn func(*os.File) error) error {
 	file, err := os.OpenFile(fileName, os.O_RDONLY, 0744)
 	if err != nil {

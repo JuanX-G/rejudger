@@ -1,6 +1,6 @@
 // Custom sync provides a small synchronization helper.
 // Written mainly to facilitate shorter locks on global maps.
-// You can obtain a point and release a lock on a map while still
+// You can obtain a pointer and release a lock on a map while still
 // having the safety of a mutex over the value.
 package customSync
 

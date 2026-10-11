@@ -29,8 +29,12 @@ func LoadRolesConfigFromFile(file *os.File) (RoleConfig, error) {
 	return role, nil
 }
 
+// Config for a permission.
+//
+// # Permission String Format
+// context :: action-allowed
 type PermissionConfig struct {
-	permissionStr string `yaml:"permission"`
+	permissionStr string `yaml:"permission"` // Permissions as the original permission string
 	action        permissions.ActionPermission
 	context       string
 }
