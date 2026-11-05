@@ -1,0 +1,5 @@
+name: "rejudger-test"
+remote_user_managment: "T"
+pipeline_config_path: "./config/pipelines/"
+role_config_path: "./config/roles/"
+user_config_path: "./config/users/"

@@ -1,0 +1,13 @@
+name: "pipeline1"
+description: "the first pipeline"
+stages:
+    - name: "review"
+      plus_ones_required: 1
+      blind: false
+      soft_veto: false
+      has_deadline: false
+    - name: "re review"
+      plus_ones_required: 2
+      blind: false
+      soft_veto: true
+      has_deadline: false
