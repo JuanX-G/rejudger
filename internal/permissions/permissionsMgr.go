@@ -25,8 +25,8 @@ type BasePermissionsManager struct {
 	store basePermissionMgrStore
 }
 
-func NewPermissionManager(ctx context.Context, queries basePermissionMgrStore) (*BasePermissionsManager, error) {
-	return &BasePermissionsManager{store: queries}, nil
+func NewPermissionManager(ctx context.Context, queries basePermissionMgrStore) *BasePermissionsManager {
+	return &BasePermissionsManager{store: queries}
 }
 
 // Get all permissions, a user with the `userId`, has.

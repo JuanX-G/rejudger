@@ -49,7 +49,7 @@ func TestLoginEmail(t *testing.T) {
 	store := &MockLoginStore{}
 	permMgr := &testingservices.MockPermissionsManager{}
 
-	service, err := NewLoginManager(t.Context(), store, authmgr, permMgr)
+	service := NewLoginManager(t.Context(), store, authmgr, permMgr)
 	if err != nil {
 		sharedtesting.ServiceSetupFail(t, err, "mock permissions")
 	}
@@ -80,7 +80,7 @@ func TestLoginWrongPassword(t *testing.T) {
 	store := &MockLoginStore{}
 	permMgr := &testingservices.MockPermissionsManager{}
 
-	service, err := NewLoginManager(t.Context(), store, authmgr, permMgr)
+	service := NewLoginManager(t.Context(), store, authmgr, permMgr)
 	if err != nil {
 		sharedtesting.ServiceSetupFail(t, err, "mock permissions")
 	}
@@ -113,7 +113,7 @@ func TestLoginPermissions(t *testing.T) {
 	}
 	store := &MockLoginStore{}
 
-	loginMgr, err := NewLoginManager(t.Context(), store, authMgr, permissionMgr)
+	loginMgr := NewLoginManager(t.Context(), store, authMgr, permissionMgr)
 	if err != nil {
 		sharedtesting.ServiceSetupFail(t, err, "login manager")
 	}
