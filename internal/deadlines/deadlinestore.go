@@ -5,14 +5,6 @@ import (
 	"revit/internal/db"
 )
 
-// using <T = .list::List<.E>, E = .Comparable> def f(l: T, b: E) = {
-// 	operator walk = |idx: usize that [$ in rangeof l], p: T|{
-// 		match list::At(l, idx) {
-// 			eq E ->
-// 		}
-// 	}
-// }
-
 type DeadlineStore interface {
 	InsertStageDeadline(ctx context.Context, arg db.InsertStageDeadlineParams) error
 	GetDeadlineByStageId(ctx context.Context, stageID int64) (db.StageDeadline, error)
