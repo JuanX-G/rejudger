@@ -11,8 +11,9 @@ import (
 )
 
 type SubmissionQuery struct {
-	Content string   `json:"content"`
-	Hashes  []string `json:"artifacts"`
+	Content    string   `json:"content"`
+	AppContext string   `json:"context"`
+	Hashes     []string `json:"artifacts"`
 }
 
 type SubmissionResponse struct {
