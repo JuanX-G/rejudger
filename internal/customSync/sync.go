@@ -30,6 +30,6 @@ func (p *LockedValue[T]) WithWritePointer(f func(*T)) {
 	f(&p.v)
 }
 
-func MakeLockedValue[T any](v T) *LockedValue[T] {
+func NewLockedValue[T any](v T) *LockedValue[T] {
 	return &LockedValue[T]{v: v, mu: sync.RWMutex{}}
 }

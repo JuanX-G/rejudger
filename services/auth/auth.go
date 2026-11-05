@@ -73,7 +73,7 @@ func (a *EmbeddedAuthManager) NewSession(expiryDur int, userId int, userName str
 		}
 	}
 	session := newSession(expiryDur, userId, userName, perms)
-	sessionPtr := customSync.MakeLockedValue(session)
+	sessionPtr := customSync.NewLockedValue(session)
 
 	a.sessions[token] = sessionPtr
 	return token, nil
