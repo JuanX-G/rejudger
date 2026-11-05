@@ -58,12 +58,15 @@ func (s *PgxStore) ExecTx(ctx context.Context, fn func(db.Querier) error) error 
 func (s *PgxStore) GetQueries() db.Querier {
 	return s.Querier
 }
-
-func (s *PgxStore) execOnce(ctx context.Context, fn func(db.Querier) error) error {
+func (s *PgxStore) execOnce(
+	ctx context.Context,
+	fn func(db.Querier) error,
+) error {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return wrapStoreError(err)
 	}
+
 	defer tx.Rollback(ctx)
 
 	qtx := db.New(tx)

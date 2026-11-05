@@ -16,7 +16,12 @@ type StoreError struct {
 }
 
 func (s *StoreError) Error() string {
-	return fmt.Sprintf("db error [%s]: %s", s.Code, s.Message)
+	return fmt.Sprintf(
+		"db error [%s]: %s: %v",
+		s.Code,
+		s.Message,
+		s.Err,
+	)
 }
 
 func (s *StoreError) Unwrap() error {
