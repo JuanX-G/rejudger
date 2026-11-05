@@ -24,7 +24,7 @@ type testServices struct {
 
 func setUpServices(t testing.TB) (string, testServices) {
 	logDest := &services.MockLogDest{}
-	logr, err := logger.MakeDefaultMultiLogger(logDest)
+	logr, err := logger.MakeDefaultMultiLogger(t.Context(), logDest)
 	if err != nil {
 		shared.ServiceSetupFail(t, err, "logger")
 	}
