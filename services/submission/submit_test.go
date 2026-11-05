@@ -16,7 +16,7 @@ import (
 
 func TestSubmitHandler(t *testing.T) {
 	logDest := &services.MockLogDest{}
-	logr, err := logger.MakeDefaultMultiLogger(logDest)
+	logr, err := logger.MakeDefaultMultiLogger(t.Context(), logDest)
 	if err != nil {
 		shared.ServiceSetupFail(t, err, "logger")
 	}
@@ -96,7 +96,7 @@ func TestSubmitHandler(t *testing.T) {
 
 func TestSubmitArtifactUploads(t *testing.T) {
 	logDest := &services.MockLogDest{}
-	logr, err := logger.MakeDefaultMultiLogger(logDest)
+	logr, err := logger.MakeDefaultMultiLogger(t.Context(), logDest)
 	if err != nil {
 		shared.ServiceSetupFail(t, err, "logger")
 	}
@@ -179,7 +179,7 @@ func TestSubmitArtifactUploads(t *testing.T) {
 
 func TestServiceTimeoutSetting(t *testing.T) {
 	logDest := &services.MockLogDest{}
-	logr, err := logger.MakeDefaultMultiLogger(logDest)
+	logr, err := logger.MakeDefaultMultiLogger(t.Context(), logDest)
 	if err != nil {
 		shared.ServiceSetupFail(t, err, "logger")
 	}
