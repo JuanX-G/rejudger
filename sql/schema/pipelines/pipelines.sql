@@ -11,6 +11,6 @@ CREATE TABLE pipeline_stages (
     stage_id    BIGINT NOT NULL REFERENCES stages(id),
     position    INT NOT NULL,
 
-    PRIMARY KEY (pipeline_id, position),
+    UNIQUE (pipeline_id, position),
     UNIQUE (pipeline_id, stage_id)
 );

@@ -4,6 +4,7 @@ INSERT INTO users (
 ) VALUES (
   $1, $2, $3, $4
 )
+ON CONFLICT (name) DO NOTHING
 RETURNING *;
 
 -- name: DeleteUser :exec

@@ -35,6 +35,7 @@ func (q *Queries) DeletePermissionContext(ctx context.Context, argContext string
 const insertPermission = `-- name: InsertPermission :exec
 INSERT INTO permissions (action, context)
 VALUES ($1, $2)
+ON CONFLICT (action, context) DO NOTHING
 `
 
 type InsertPermissionParams struct {

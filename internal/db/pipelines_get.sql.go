@@ -71,7 +71,7 @@ FROM pipelines p
 WHERE NOT EXISTS (
     SELECT 1
     FROM submissions s
-    WHERE s.pipeline_id = p.id
+    WHERE s.pipeline = p.id
 )
 `
 

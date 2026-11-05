@@ -12,6 +12,7 @@ import (
 const addPermissionToRole = `-- name: AddPermissionToRole :exec
 INSERT INTO role_permissions (role_id, permission_id)
 VALUES ($1, $2)
+ON CONFLICT (role_id, permission_id) DO NOTHING
 `
 
 type AddPermissionToRoleParams struct {
@@ -51,7 +52,9 @@ func (q *Queries) DeleteRoleByName(ctx context.Context, name string) error {
 
 const insertRole = `-- name: InsertRole :exec
 INSERT INTO roles (name)
-VALUES ($1) RETURNING id, name
+VALUES ($1)
+ON CONFLICT (name) DO NOTHING
+RETURNING id, name
 `
 
 func (q *Queries) InsertRole(ctx context.Context, name string) error {

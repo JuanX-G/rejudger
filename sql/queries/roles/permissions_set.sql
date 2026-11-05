@@ -1,6 +1,7 @@
 -- name: InsertPermission :exec
 INSERT INTO permissions (action, context)
-VALUES ($1, $2);
+VALUES ($1, $2)
+ON CONFLICT (action, context) DO NOTHING;
 
 -- name: DeletePermission :exec
 DELETE FROM permissions WHERE context = $1 AND action = $2;

@@ -4,5 +4,5 @@ CREATE TABLE vetoes (
     submission_id BIGINT NOT NULL REFERENCES submissions(id) ON DELETE CASCADE,
     hard BOOL NOT NULL,
 
-    UNIQUE(author, submission_id)
+    UNIQUE(vetoer, submission_id)
 );

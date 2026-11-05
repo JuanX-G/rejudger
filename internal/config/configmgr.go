@@ -6,14 +6,13 @@ import (
 	"fmt"
 	"os"
 	"revit/internal/db"
+	"revit/internal/jsonHelpers"
 	"revit/internal/permissions"
 	"revit/internal/store"
-	"slices"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"gopkg.in/yaml.v3"
 )
 
 type ConfigMgr struct {
@@ -23,42 +22,52 @@ type ConfigMgr struct {
 	store     ConfigStore
 }
 
-func NewConfigMgr(pool *pgxpool.Pool, fileName string) (*ConfigMgr, error) {
+func NewConfigMgr(pool *pgxpool.Pool, fileName string) (*ConfigMgr, []forDirResult, error) {
 	base, err := LoadBaseConfig(fileName)
 	if err != nil {
-		return nil, err
+		return nil, []forDirResult{}, err
 	}
 	if base.RemoteUserManagment == "" || base.RemoteUserManagment == "T" {
 		base.RemoteUserManagmentOn = true
 	}
+
 	pipelines := []Pipeline{}
-	forDir(base.PipelieConfigPath, func(file *os.File) error {
-		dec := yaml.NewDecoder(file)
-		pipeline := Pipeline{}
-		err = dec.Decode(&pipeline)
+	pipelinesResults, err := forDir(base.PipelineConfigPath, func(file *os.File) error {
+		pipeline, err := LoadPipelineConfig(file)
 		if err != nil {
 			return ConfigError{errType: ConfigErrorDecodeError, msg: fmt.Sprintf("config error occured; yaml.decoder.decode() reported: %s", err.Error())}
 		}
 		pipelines = append(pipelines, pipeline)
 		return nil
 	})
+
+	if err != nil {
+		return nil, pipelinesResults, err
+	}
+
 	roles := []RoleConfig{}
-	forDir(base.RoleConfigPath, func(file *os.File) error {
+	roleResults, err := forDir(base.RoleConfigPath, func(file *os.File) error {
 		role, err := LoadRolesConfigFromFile(file)
 		if err != nil {
 			return err
 		}
+
 		roles = append(roles, role)
 		return nil
 	})
-	return &ConfigMgr{Base: base, Pipelines: pipelines, Roles: roles, store: store.NewStore(pool)}, nil
+	totalResults := append(pipelinesResults, roleResults...)
+	if err != nil {
+		return nil, pipelinesResults, err
+	}
+
+	return &ConfigMgr{Base: base, Pipelines: pipelines, Roles: roles, store: store.NewStore(pool)}, totalResults, nil
 }
 
 // Sync roles from config. Deletes roles not listed in the config and not asigned to any users.
 func (c *ConfigMgr) SyncRoles(ctx context.Context) error {
 	confNames := make(map[string]struct{})
 	for _, role := range c.Roles {
-		confNames[role.name] = struct{}{}
+		confNames[role.Name] = struct{}{}
 		if err := c.syncRole(ctx, role); err != nil {
 			return err
 		}
@@ -80,49 +89,61 @@ func (c *ConfigMgr) SyncRoles(ctx context.Context) error {
 	return nil
 }
 
-// sync a single role.
+// Sync a single role.
 func (c *ConfigMgr) syncRole(ctx context.Context, role RoleConfig) error {
-	permissionSets := make(map[string]permissions.PermissionSet, len(role.perms))
-	for _, perm := range role.perms {
-		set, ok := permissionSets[perm.context]
+	permissionSets := make(map[string]permissions.PermissionSet, len(role.Perms))
+	for _, perm := range role.Perms {
+		set, ok := permissionSets[perm.Context]
 		if !ok {
-			permissionSets[perm.context] = permissions.PermissionSet{Context: perm.context, Permissions: map[permissions.ActionPermission]struct{}{perm.action: struct{}{}}}
+			permissionSets[perm.Context] = permissions.PermissionSet{Context: perm.Context, Permissions: map[permissions.ActionPermission]struct{}{perm.Action: struct{}{}}}
 		} else {
-			set.Permissions[perm.action] = struct{}{}
-			permissionSets[perm.context] = set
+			set.Permissions[perm.Action] = struct{}{}
+			permissionSets[perm.Context] = set
 		}
 	}
 	queryFn := func(q db.Querier) error {
-		if err := q.InsertRole(ctx, role.name); err != nil {
-			return nil
+		if err := q.InsertRole(ctx, role.Name); err != nil {
+			return err
 		}
+
 		ids := []int32{}
+
 		for _, set := range permissionSets {
-			err := permissions.QueriesInsertPermissionSet(ctx, q, set)
-			if err != nil {
+			if err := permissions.QueriesInsertPermissionSet(ctx, q, set); err != nil {
 				return err
 			}
+
 			for action := range set.Permissions {
-				id, err := q.GetPermissionId(ctx, db.GetPermissionIdParams{Context: set.Context, Action: action.String()})
+				id, err := q.GetPermissionId(ctx, db.GetPermissionIdParams{
+					Context: set.Context,
+					Action:  action.String(),
+				})
+
 				if err != nil {
-					if !errors.Is(err, pgx.ErrNoRows) {
+					if errors.Is(err, pgx.ErrNoRows) {
 						continue
 					}
 					return err
 				}
+
 				ids = append(ids, id)
 			}
 		}
-		dbrole, err := q.GetRoleByName(ctx, role.name)
+
+		dbrole, err := q.GetRoleByName(ctx, role.Name)
 		if err != nil {
 			return err
 		}
+
 		for _, id := range ids {
-			err := q.AddPermissionToRole(ctx, db.AddPermissionToRoleParams{RoleID: dbrole.ID, PermissionID: id})
-			if err != nil {
-				continue
+			if err := q.AddPermissionToRole(ctx, db.AddPermissionToRoleParams{
+				RoleID:       dbrole.ID,
+				PermissionID: id,
+			}); err != nil {
+				return err
 			}
 		}
+
 		return nil
 	}
 	return c.store.ExecTx(ctx, queryFn)
@@ -216,28 +237,42 @@ func (c *ConfigMgr) SyncPipelines(ctx context.Context) error {
 					return err
 				}
 			}
+			configuredVersions := make([][]byte, 0, len(c.Pipelines))
+
+			for _, p := range c.Pipelines {
+				version, err := p.JSON()
+				if err != nil {
+					return err
+				}
+				configuredVersions = append(configuredVersions, version)
+			}
 
 			unusedPipeline, err := q.GetUnusedPipelines(ctx)
+			if err != nil {
+				return err
+			}
 
 			// Purge unused pipelines. We must use nested for loops as pipelines contain
 			// slices so can't be map keys.
 			// We do not delete unused an unused pipeline right away as it could be a
 			// freshly configured one.
 			for _, unused := range unusedPipeline {
-				match := false
-				for range c.Pipelines {
+				configured := false
+
+				for _, version := range configuredVersions {
+					equal, err := jsonHelpers.JSONCompare(version, unused.Version)
 					if err != nil {
-						continue
+						return err
 					}
-					if slices.Equal(version, unused.Version) { // compare json versions of the unused pipeline we found
-						match = true
+
+					if equal {
+						configured = true
 						break
 					}
 				}
 
-				if !match {
-					err := q.DeletePipelineById(ctx, unused.ID)
-					if err != nil {
+				if !configured {
+					if err := q.DeletePipelineById(ctx, unused.ID); err != nil {
 						return err
 					}
 				}

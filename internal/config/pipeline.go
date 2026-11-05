@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -12,22 +13,22 @@ type Pipeline struct {
 	Stages      []PipelineStage `yaml:"stages" json:"stages"`
 }
 
-func LoadPipelineConfig(fileName string) (*Pipeline, error) {
+func LoadPipelineConfig(file *os.File) (Pipeline, error) {
 	pipeline := Pipeline{}
-	err := decodeFile(fileName, &pipeline)
+	err := decodeOpenFile(file, &pipeline)
 	if err != nil {
-		return nil, ConfigError{errType: ConfigErrorOpenFile}
+		return pipeline, ConfigError{errType: ConfigErrorOpenFile}
 	}
 	for i := 0; i < len(pipeline.Stages); i++ {
 		pipeline.Stages[i].Deadline.FrequencyStr = pipeline.Stages[i].DeadlineStr
 		if err := pipeline.Stages[i].Deadline.ParseDeadline(); err != nil {
-			return nil, err
+			return pipeline, err
 		}
 		if i+1 == len(pipeline.Stages) {
 			pipeline.Stages[i].Final = true
 		}
 	}
-	return &pipeline, nil
+	return pipeline, nil
 }
 
 func (p *Pipeline) JSON() ([]byte, error) {
@@ -42,8 +43,8 @@ type PipelineStage struct {
 	HasDeadline      bool   `yaml:"has_deadline" json:"has_deadline"`
 	DeadlineStr      string `yaml:"deadline" json:"deadline"`
 
-	Deadline StageDeadline `json:"-"`
-	Final    bool          `json:"-"`
+	Deadline StageDeadline `yaml:"-" json:"-"`
+	Final    bool          `yaml:"-" json:"-"`
 }
 
 func boolToString(b bool) string {
