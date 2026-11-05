@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"revit/internal/artifactmanager"
+	"revit/internal/config"
 	"revit/internal/logger"
 	"revit/internal/permissions"
 	"revit/internal/store"
@@ -20,26 +22,43 @@ import (
 
 func main() {
 	ctx := context.Background()
-	pool, err := pgxpool.New(ctx, "")
+	loggerMgr, err := logger.MakeDefaultMultiLogger(ctx, os.Stdout)
 	if err != nil {
 		fmt.Println("Err: ", err)
+		os.Exit(1)
 	}
 
-	loggerMgr := logger.NewMultiLogger()
+	pool, err := pgxpool.New(ctx, "user=macia host=localhost port=5432 dbname=rejudger pool_max_conns=10")
+	if err != nil {
+		panic(err)
+	}
+
+	cfgMgr, results, err := config.NewConfigMgr(pool, "./config/config.yaml")
+	if err != nil {
+		panic(err)
+	}
+
+	for _, v := range results {
+		loggerMgr.Log(ctx, logger.LogMessage{
+			Level:  logger.LogLevelError,
+			Source: "main",
+			Msg:    fmt.Sprintf("error loading config file: %s, error reported: %s", v.FileName, v.Err.Error()),
+		})
+	}
+
+	err = cfgMgr.SyncAll(ctx)
+	if err != nil {
+		panic(err)
+	}
+
 	authMgr := auth.NewAuthManager()
 	store := store.NewStore(pool)
-	permissionMgr, err := permissions.NewPermissionManager(ctx, store)
-	if err != nil {
-		fmt.Println("Err: ", err)
-	}
+	permissionMgr := permissions.NewPermissionManager(ctx, store)
 
 	artifactMgr := artifactmanager.NewArtifactManager(store)
 	artifactSvc := artifactservice.NewBaseArtifactService(artifactMgr)
 
-	loginMgr, err := login.NewLoginManager(ctx, store, authMgr, permissionMgr)
-	if err != nil {
-		fmt.Println("Err: ", err)
-	}
+	loginMgr := login.NewLoginManager(ctx, store, authMgr, permissionMgr)
 
 	mux := http.NewServeMux()
 
@@ -57,6 +76,12 @@ func main() {
 	userManagmentSvc.RegisterRoutes(mux)
 	submissionSvc.RegisterRoutes(mux)
 	loginMgr.RegisterRoutes(mux)
+
+	err = loggerMgr.Log(ctx, logger.LogMessage{
+		Level:  logger.LogLevelInfo,
+		Source: "main",
+		Msg:    fmt.Sprintf("HTTP server listeing on: %d", 6619),
+	})
 
 	err = http.ListenAndServe(":6619", mux)
 	if err != nil {
