@@ -10,8 +10,8 @@ import (
 )
 
 type RoleConfig struct {
-	name  string             `yaml:"name"`
-	perms []PermissionConfig `yaml:"permissions"`
+	Name  string             `yaml:"name"`
+	Perms []PermissionConfig `yaml:"permissions"`
 }
 
 func LoadRolesConfigFromFile(file *os.File) (RoleConfig, error) {
@@ -21,32 +21,38 @@ func LoadRolesConfigFromFile(file *os.File) (RoleConfig, error) {
 	if err != nil {
 		return RoleConfig{}, err
 	}
-	for _, perm := range role.perms {
-		if err := perm.ParsePermissionConfig(); err != nil {
+
+	for i := range role.Perms {
+		if err := role.Perms[i].ParsePermissionConfig(); err != nil {
 			return RoleConfig{}, err
 		}
 	}
+
 	return role, nil
 }
 
+// Config for a permission.
+//
+// # Permission String Format
+// context :: action-allowed
 type PermissionConfig struct {
-	permissionStr string `yaml:"permission"`
-	action        permissions.ActionPermission
-	context       string
+	PermissionStr string                       `yaml:"permission"` // Permissions as the original permission string
+	Action        permissions.ActionPermission `yaml:"-"`
+	Context       string                       `yaml:"-"`
 }
 
 func (p *PermissionConfig) ParsePermissionConfig() error {
-	parts := strings.Split(p.permissionStr, "::")
+	parts := strings.Split(p.PermissionStr, "::")
 	if len(parts) != 2 {
 		return ConfigError{errType: ConfigErrorInvaidFormatting, msg: fmt.Sprintf(`invalid permission string format,
-			found string: %s, with: %d part when split by '::'`, p.permissionStr, len(parts))}
+			found string: %s, with: %d part when split by '::'`, p.PermissionStr, len(parts))}
 	}
 
-	p.context = strings.TrimSpace(parts[0])
+	p.Context = strings.TrimSpace(parts[0])
 	action, err := permissions.ParseActionPermission(strings.TrimSpace(parts[1]))
 	if err != nil {
 		return err
 	}
-	p.action = action
+	p.Action = action
 	return nil
 }

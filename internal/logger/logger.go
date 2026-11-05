@@ -59,7 +59,7 @@ func (l *Logger) Log(ctx context.Context, msg LogMessage) error {
 	return l.srv.Send(ctx, msg)
 }
 
-func MakeDefaultMultiLogger(dest io.WriteCloser) (*MultiLogger, error) {
+func MakeDefaultMultiLogger(ctx context.Context, dest io.WriteCloser) (*MultiLogger, error) {
 	mlogger := NewMultiLogger()
 
 	LOGLEVELS := []LogLevel{LogLevelInfo, LogLevelDebug, LogLevelError}
@@ -68,6 +68,7 @@ func MakeDefaultMultiLogger(dest io.WriteCloser) (*MultiLogger, error) {
 		if err != nil {
 			return nil, err
 		}
+		lg.srv.Run(ctx)
 		mlogger.AddLoggerToMultiLogger(lg)
 	}
 	return mlogger, nil
@@ -82,10 +83,10 @@ func NewScopedLogger(mlogger *MultiLogger, source string) *ScopedLogger {
 	return &ScopedLogger{logger: mlogger, source: source}
 }
 
-func (sl *ScopedLogger) Log(ctx context.Context, msg string, level LogLevel) {
-	sl.logger.Log(ctx, LogMessage{Level: level, Msg: msg, Source: sl.source})
+func (sl *ScopedLogger) Log(ctx context.Context, msg string, level LogLevel) error {
+	return sl.logger.Log(ctx, LogMessage{Level: level, Msg: msg, Source: sl.source})
 }
 
-func (sl *ScopedLogger) LogFrom(ctx context.Context, place, msg string, level LogLevel) {
-	sl.logger.Log(ctx, LogMessage{Level: level, Msg: msg, Source: sl.source + "::" + place})
+func (sl *ScopedLogger) LogFrom(ctx context.Context, place, msg string, level LogLevel) error {
+	return sl.logger.Log(ctx, LogMessage{Level: level, Msg: msg, Source: sl.source + "::" + place})
 }

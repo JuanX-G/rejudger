@@ -17,6 +17,7 @@ type InsertionNotification struct {
 type mockSubmissionStore struct {
 	insertNotify chan InsertionNotification
 	AcceptAll    bool
+	StageId      int
 }
 
 func (ss *mockSubmissionStore) GetUserById(ctx context.Context, id int64) (db.User, error) {
@@ -80,4 +81,29 @@ func (ss *mockSubmissionStore) GetUserByName(ctx context.Context, name string) (
 		Name:  services.DEFAULT_USERNAME,
 		Email: pgtype.Text{String: services.DEFAULT_EMAIL, Valid: true},
 	}, nil
+}
+
+func (ss *mockSubmissionStore) AddPlusOne(ctx context.Context, args db.AddPlusOneParams) error {
+	return nil
+}
+
+func (ss *mockSubmissionStore) CountPlusOnes(ctx context.Context, arg db.CountPlusOnesParams) (int64, error) {
+	return 1, nil
+}
+
+func (ss *mockSubmissionStore) GetPipelineStage(ctx context.Context, arg db.GetPipelineStageParams) (db.PipelineStage, error) {
+	return db.PipelineStage{}, nil
+}
+
+func (ss *mockSubmissionStore) GetStageById(ctx context.Context, id int64) (db.Stage, error) {
+	return db.Stage{}, nil
+}
+
+func (ss *mockSubmissionStore) AddOneToSubmissionStageById(ctx context.Context, id int64) error {
+	ss.StageId++
+	return nil
+}
+
+func (ss *mockSubmissionStore) GetVetosBySubmissionId(ctx context.Context, submissionID int64) ([]db.Veto, error) {
+	return []db.Veto{}, nil
 }

@@ -29,9 +29,10 @@ type PipelineStage struct {
 }
 
 type PlusOne struct {
-	UserID       int64
-	SubmissionID int64
-	MadeAt       pgtype.Timestamp
+	UserID        int64
+	SubmissionID  int64
+	PipelineStage int32
+	MadeAt        pgtype.Timestamp
 }
 
 type Role struct {
@@ -53,6 +54,14 @@ type Stage struct {
 	SoftVeto        bool
 	HasDeadline     bool
 	DeadlineStr     pgtype.Text
+	Final           bool
+}
+
+type StageDeadline struct {
+	ID       int64
+	StageID  int64
+	LastRan  pgtype.Timestamp
+	Duration int64
 }
 
 type Submission struct {
@@ -62,7 +71,7 @@ type Submission struct {
 	Author        int64
 	Hash          string
 	Pipeline      int64
-	PipelineStage int64
+	PipelineStage int32
 }
 
 type SubmissionArtifact struct {
@@ -86,4 +95,11 @@ type User struct {
 type UserRole struct {
 	UserID int64
 	RoleID int32
+}
+
+type Veto struct {
+	ID           int64
+	Vetoer       int64
+	SubmissionID int64
+	Hard         bool
 }

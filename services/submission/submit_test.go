@@ -16,7 +16,7 @@ import (
 
 func TestSubmitHandler(t *testing.T) {
 	logDest := &services.MockLogDest{}
-	logr, err := logger.MakeDefaultMultiLogger(logDest)
+	logr, err := logger.MakeDefaultMultiLogger(t.Context(), logDest)
 	if err != nil {
 		shared.ServiceSetupFail(t, err, "logger")
 	}
@@ -33,7 +33,13 @@ func TestSubmitHandler(t *testing.T) {
 
 	artifactService := services.NewMockArtifactService(artifactStore)
 
-	service := NewSubmissionService(store, authmgr, artifactService, logr, services.DEFAULT_APPCONTEXT, 0)
+	service := NewSubmissionService(SubmissionServiceParams{
+		Store:       store,
+		AuthMgr:     authmgr,
+		ArtifactSvc: artifactService,
+		BaseLogger:  logr,
+		AppContext:  services.DEFAULT_APPCONTEXT,
+	})
 	service.RegisterRoutes(mux)
 
 	// stage a request with no artifacts
@@ -90,7 +96,7 @@ func TestSubmitHandler(t *testing.T) {
 
 func TestSubmitArtifactUploads(t *testing.T) {
 	logDest := &services.MockLogDest{}
-	logr, err := logger.MakeDefaultMultiLogger(logDest)
+	logr, err := logger.MakeDefaultMultiLogger(t.Context(), logDest)
 	if err != nil {
 		shared.ServiceSetupFail(t, err, "logger")
 	}
@@ -108,7 +114,13 @@ func TestSubmitArtifactUploads(t *testing.T) {
 	artifactService := services.NewMockArtifactService(artifactStore)
 	artifactService.ExpectedArtifacts = make(chan services.ExpectedMsg, 8)
 	defer close(artifactService.ExpectedArtifacts)
-	service := NewSubmissionService(store, authmgr, artifactService, logr, services.DEFAULT_APPCONTEXT, 0)
+	service := NewSubmissionService(SubmissionServiceParams{
+		Store:       store,
+		AuthMgr:     authmgr,
+		ArtifactSvc: artifactService,
+		BaseLogger:  logr,
+		AppContext:  services.DEFAULT_APPCONTEXT,
+	})
 	service.RegisterRoutes(mux)
 
 	// stage a request with a artifact
@@ -167,7 +179,7 @@ func TestSubmitArtifactUploads(t *testing.T) {
 
 func TestServiceTimeoutSetting(t *testing.T) {
 	logDest := &services.MockLogDest{}
-	logr, err := logger.MakeDefaultMultiLogger(logDest)
+	logr, err := logger.MakeDefaultMultiLogger(t.Context(), logDest)
 	if err != nil {
 		shared.ServiceSetupFail(t, err, "logger")
 	}
@@ -176,16 +188,13 @@ func TestServiceTimeoutSetting(t *testing.T) {
 		shared.ServiceSetupFail(t, err, "auth")
 	}
 
-	svc := NewSubmissionService(nil, authmgr, nil, logr, "", 0) // It is okay to use nil for some interfaces provided we do not make any requests
-
+	svc := NewSubmissionService(SubmissionServiceParams{
+		AuthMgr:    authmgr,
+		BaseLogger: logr,
+		AppContext: services.DEFAULT_APPCONTEXT,
+		Timeout:    0,
+	})
 	expected := DEFAULT_SUBMISSION_TIMEOUT * time.Second
-	if svc.timeout != expected {
-		t.Fatalf("expected timeout to be: %s, found: %s", expected, svc.timeout)
-	}
-
-	svc = NewSubmissionService(nil, authmgr, nil, logr, "", 15)
-
-	expected = 15 * time.Second
 	if svc.timeout != expected {
 		t.Fatalf("expected timeout to be: %s, found: %s", expected, svc.timeout)
 	}

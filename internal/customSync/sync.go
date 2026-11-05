@@ -1,6 +1,6 @@
 // Custom sync provides a small synchronization helper.
 // Written mainly to facilitate shorter locks on global maps.
-// You can obtain a point and release a lock on a map while still
+// You can obtain a pointer and release a lock on a map while still
 // having the safety of a mutex over the value.
 package customSync
 
@@ -30,6 +30,6 @@ func (p *LockedValue[T]) WithWritePointer(f func(*T)) {
 	f(&p.v)
 }
 
-func MakeLockedValue[T any](v T) *LockedValue[T] {
+func NewLockedValue[T any](v T) *LockedValue[T] {
 	return &LockedValue[T]{v: v, mu: sync.RWMutex{}}
 }

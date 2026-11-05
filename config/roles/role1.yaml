@@ -1,0 +1,6 @@
+name: "role rolity"
+permissions:
+    - permission: "peak::View"
+    - permission: "peak::Submit"
+    - permission: "peak::Write"
+    - permission: "peak::PlusOne"

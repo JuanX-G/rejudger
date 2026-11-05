@@ -1,8 +1,3 @@
-CREATE TABLE roles (
-	id SERIAL PRIMARY KEY,
-	name TEXT NOT NULL UNIQUE
-);
-
 CREATE TABLE permissions (
 	id SERIAL PRIMARY KEY,
 	action TEXT NOT NULL,

@@ -24,7 +24,7 @@ type testServices struct {
 
 func setUpServices(t testing.TB) (string, testServices) {
 	logDest := &services.MockLogDest{}
-	logr, err := logger.MakeDefaultMultiLogger(logDest)
+	logr, err := logger.MakeDefaultMultiLogger(t.Context(), logDest)
 	if err != nil {
 		shared.ServiceSetupFail(t, err, "logger")
 	}
@@ -40,7 +40,13 @@ func setUpServices(t testing.TB) (string, testServices) {
 	artifactService := services.NewMockArtifactService(artifactStore)
 	artifactService.ExpectedArtifacts = make(chan services.ExpectedMsg, 8)
 	defer close(artifactService.ExpectedArtifacts)
-	service := NewSubmissionService(store, authmgr, artifactService, logr, services.DEFAULT_APPCONTEXT, 0)
+	service := NewSubmissionService(SubmissionServiceParams{
+		Store:       store,
+		AuthMgr:     authmgr,
+		ArtifactSvc: artifactService,
+		BaseLogger:  logr,
+		AppContext:  services.DEFAULT_APPCONTEXT,
+	})
 	service.RegisterRoutes(mux)
 	return token, testServices{
 		logger:    logr,
@@ -62,7 +68,7 @@ func TestGetSubmission(t *testing.T) {
 	}
 
 	reader := bytes.NewReader(b)
-	req := httptest.NewRequest(http.MethodPost, "/submissions/get", reader)
+	req := httptest.NewRequest(http.MethodPost, "/submissions/get_by_author", reader)
 	req.Header.Add("X-Auth-Token", token)
 
 	checkFn := func(t testing.TB, resp GetSubmissionsResponse) {
@@ -97,7 +103,7 @@ func TestGetSubmissionOffset(t *testing.T) {
 
 	reader := bytes.NewReader(b)
 
-	req := httptest.NewRequest(http.MethodPost, "/submissions/get", reader)
+	req := httptest.NewRequest(http.MethodPost, "/submissions/get_by_author", reader)
 	req.Header.Add("X-Auth-Token", token)
 
 	checkFn := func(t testing.TB, resp GetSubmissionsResponse) {

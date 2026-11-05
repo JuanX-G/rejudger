@@ -18,10 +18,7 @@ func countContexts(in []PermissionSet) int {
 
 func setUpPermissionMgr(t testing.TB) (PermissionsManager, *mockBasePermissionMgrStore) {
 	mock := &mockBasePermissionMgrStore{}
-	mgr, err := NewPermissionManager(t.Context(), mock)
-	if err != nil {
-		t.Fatalf("creating a new permission manager failed, error: %s", err)
-	}
+	mgr := NewPermissionManager(t.Context(), mock)
 	return mgr, mock
 }
 

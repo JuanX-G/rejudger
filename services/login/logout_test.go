@@ -20,7 +20,7 @@ func TestLogout(t *testing.T) {
 	permMgr := &testingservices.MockPermissionsManager{}
 
 	store := &MockLoginStore{}
-	loginMgr, err := NewLoginManager(t.Context(), store, authMgr, permMgr)
+	loginMgr := NewLoginManager(t.Context(), store, authMgr, permMgr)
 	if err != nil {
 		sharedtesting.ServiceSetupFail(t, err, "login manager")
 	}
@@ -57,7 +57,7 @@ func TestLogoutInvalidSession(t *testing.T) {
 	permMgr := &testingservices.MockPermissionsManager{}
 
 	store := &MockLoginStore{}
-	loginMgr, err := NewLoginManager(t.Context(), store, authMgr, permMgr)
+	loginMgr := NewLoginManager(t.Context(), store, authMgr, permMgr)
 	if err != nil {
 		sharedtesting.ServiceSetupFail(t, err, "login manager")
 	}
@@ -88,7 +88,7 @@ func TestLogoutWithoutToken(t *testing.T) {
 
 	permMgr := &testingservices.MockPermissionsManager{}
 	store := &MockLoginStore{}
-	loginMgr, err := NewLoginManager(t.Context(), store, authMgr, permMgr)
+	loginMgr := NewLoginManager(t.Context(), store, authMgr, permMgr)
 	if err != nil {
 		sharedtesting.ServiceSetupFail(t, err, "login manager")
 	}
