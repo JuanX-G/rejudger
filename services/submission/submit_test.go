@@ -20,10 +20,12 @@ func TestSubmitHandler(t *testing.T) {
 	if err != nil {
 		shared.ServiceSetupFail(t, err, "logger")
 	}
+
 	token, authmgr, err := services.MakeAuthMgr(services.DEFAULT_PERMISSION_SET)
 	if err != nil {
 		shared.ServiceSetupFail(t, err, "auth")
 	}
+
 	insertCh := make(chan InsertionNotification, 8)
 	defer close(insertCh)
 	store := &mockSubmissionStore{insertNotify: insertCh, AcceptAll: true}
