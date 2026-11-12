@@ -8,10 +8,15 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Context struct {
+	ID   int64
+	Name string
+}
+
 type Permission struct {
 	ID      int32
 	Action  string
-	Context string
+	Context int64
 }
 
 type Pipeline struct {
@@ -19,6 +24,7 @@ type Pipeline struct {
 	Name        string
 	Version     []byte
 	Description pgtype.Text
+	Context     int64
 }
 
 type PipelineStage struct {
@@ -33,6 +39,16 @@ type PlusOne struct {
 	SubmissionID  int64
 	PipelineStage int32
 	MadeAt        pgtype.Timestamp
+}
+
+type PublishedSubmission struct {
+	ID          int64
+	CreatedAt   pgtype.Timestamp
+	PublishedAt pgtype.Timestamp
+	Content     string
+	Author      int64
+	Hash        string
+	Context     string
 }
 
 type Role struct {

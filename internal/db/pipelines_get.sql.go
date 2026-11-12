@@ -25,7 +25,7 @@ func (q *Queries) GetHowManyUseByPipelineId(ctx context.Context, id int64) (int6
 }
 
 const getPipelineByVersion = `-- name: GetPipelineByVersion :one
-SELECT id, name, version, description FROM pipelines
+SELECT id, name, version, description, context FROM pipelines
 WHERE version = $1
 `
 
@@ -37,6 +37,7 @@ func (q *Queries) GetPipelineByVersion(ctx context.Context, version []byte) (Pip
 		&i.Name,
 		&i.Version,
 		&i.Description,
+		&i.Context,
 	)
 	return i, err
 }
@@ -66,7 +67,7 @@ func (q *Queries) GetPipelinesIds(ctx context.Context) ([]int64, error) {
 }
 
 const getUnusedPipelines = `-- name: GetUnusedPipelines :many
-SELECT p.id, p.name, p.version, p.description
+SELECT p.id, p.name, p.version, p.description, p.context
 FROM pipelines p
 WHERE NOT EXISTS (
     SELECT 1
@@ -89,6 +90,7 @@ func (q *Queries) GetUnusedPipelines(ctx context.Context) ([]Pipeline, error) {
 			&i.Name,
 			&i.Version,
 			&i.Description,
+			&i.Context,
 		); err != nil {
 			return nil, err
 		}

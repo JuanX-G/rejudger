@@ -2,7 +2,8 @@ CREATE TABLE pipelines (
     id          BIGSERIAL PRIMARY KEY,
     name        TEXT NOT NULL,
     version     JSONB NOT NULL UNIQUE,
-    description TEXT
+    description TEXT,
+    context BIGINT NOT NULL REFERENCES contexts(id) ON DELETE CASCADE
 );
 
 CREATE TABLE pipeline_stages (

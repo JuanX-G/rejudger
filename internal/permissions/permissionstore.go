@@ -10,10 +10,12 @@ type basePermissionMgrStore interface {
 	GetUserPermissions(context.Context, int64) ([]db.Permission, error)
 	InsertPermission(context.Context, db.InsertPermissionParams) error
 	DeletePermission(context.Context, db.DeletePermissionParams) error
-	DeletePermissionContext(context.Context, string) error
+	DeletePermissionContext(context.Context, int64) error
 	InsertRole(context.Context, string) error
 	GetRoleByName(context.Context, string) (db.Role, error)
 	AddPermissionToRole(context.Context, db.AddPermissionToRoleParams) error
 	GetPermissionId(context.Context, db.GetPermissionIdParams) (int32, error)
+	GetContextById(ctx context.Context, id int64) (db.Context, error)
+	GetContextByName(ctx context.Context, name string) (db.Context, error)
 	ExecTx(context.Context, func(db.Querier) error) error
 }

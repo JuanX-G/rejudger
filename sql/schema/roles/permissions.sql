@@ -1,7 +1,7 @@
 CREATE TABLE permissions (
 	id SERIAL PRIMARY KEY,
 	action TEXT NOT NULL,
-	context TEXT NOT NULL,
+	context BIGINT NOT NULL REFERENCES contexts(id) ON DELETE CASCADE,
 
 
 	UNIQUE(action, context)

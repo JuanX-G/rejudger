@@ -52,18 +52,26 @@ func (q *Queries) DeletePlusOne(ctx context.Context, arg DeletePlusOneParams) er
 }
 
 const insertSubmission = `-- name: InsertSubmission :exec
-INSERT INTO submissions (content, author, hash)
-VALUES ($1, $2, $3)
+INSERT INTO submissions (content, author, hash, pipeline, pipeline_stage)
+VALUES ($1, $2, $3, $4, $5)
 `
 
 type InsertSubmissionParams struct {
-	Content string
-	Author  int64
-	Hash    string
+	Content       string
+	Author        int64
+	Hash          string
+	Pipeline      int64
+	PipelineStage int32
 }
 
 func (q *Queries) InsertSubmission(ctx context.Context, arg InsertSubmissionParams) error {
-	_, err := q.db.Exec(ctx, insertSubmission, arg.Content, arg.Author, arg.Hash)
+	_, err := q.db.Exec(ctx, insertSubmission,
+		arg.Content,
+		arg.Author,
+		arg.Hash,
+		arg.Pipeline,
+		arg.PipelineStage,
+	)
 	return err
 }
 

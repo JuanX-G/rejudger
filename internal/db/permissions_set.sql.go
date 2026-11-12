@@ -14,7 +14,7 @@ DELETE FROM permissions WHERE context = $1 AND action = $2
 `
 
 type DeletePermissionParams struct {
-	Context string
+	Context int64
 	Action  string
 }
 
@@ -27,7 +27,7 @@ const deletePermissionContext = `-- name: DeletePermissionContext :exec
 DELETE FROM permissions WHERE context = $1
 `
 
-func (q *Queries) DeletePermissionContext(ctx context.Context, argContext string) error {
+func (q *Queries) DeletePermissionContext(ctx context.Context, argContext int64) error {
 	_, err := q.db.Exec(ctx, deletePermissionContext, argContext)
 	return err
 }
@@ -40,7 +40,7 @@ ON CONFLICT (action, context) DO NOTHING
 
 type InsertPermissionParams struct {
 	Action  string
-	Context string
+	Context int64
 }
 
 func (q *Queries) InsertPermission(ctx context.Context, arg InsertPermissionParams) error {

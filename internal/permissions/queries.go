@@ -6,8 +6,13 @@ import (
 )
 
 func QueriesInsertPermissionSet(ctx context.Context, q db.Querier, set PermissionSet) error {
+	dbcontext, err := q.GetContextByName(ctx, set.Context)
+	if err != nil {
+		return err
+	}
+
 	for k := range set.Permissions {
-		err := q.InsertPermission(ctx, db.InsertPermissionParams{Context: set.Context, Action: k.String()})
+		err := q.InsertPermission(ctx, db.InsertPermissionParams{Context: dbcontext.ID, Action: k.String()})
 		if err != nil {
 			return err
 		}

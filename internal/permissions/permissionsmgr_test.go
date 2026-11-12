@@ -51,7 +51,7 @@ func TestGetUserPermissions(t *testing.T) {
 	for i, set := range permSets {
 		_, ok := set.Permissions[usedAct]
 		if ok {
-			t.Fatalf("expected")
+			t.Fatalf("expected") // TODO
 		}
 		if i > 1 {
 			t.Fatalf("expected two different contexts found: %d", countContexts(permSets))

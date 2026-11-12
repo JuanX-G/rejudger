@@ -28,7 +28,7 @@ INSERT INTO pipelines (
     description
 )
 VALUES ($1,$2,$3)
-RETURNING id, name, version, description
+RETURNING id, name, version, description, context
 `
 
 type InsertPipelineParams struct {
@@ -45,6 +45,7 @@ func (q *Queries) InsertPipeline(ctx context.Context, arg InsertPipelineParams) 
 		&i.Name,
 		&i.Version,
 		&i.Description,
+		&i.Context,
 	)
 	return i, err
 }

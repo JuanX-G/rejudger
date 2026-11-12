@@ -13,7 +13,7 @@ const getPermissionByContext = `-- name: GetPermissionByContext :many
 SELECT action FROM permissions WHERE context = $1 LIMIT 1
 `
 
-func (q *Queries) GetPermissionByContext(ctx context.Context, argContext string) ([]string, error) {
+func (q *Queries) GetPermissionByContext(ctx context.Context, argContext int64) ([]string, error) {
 	rows, err := q.db.Query(ctx, getPermissionByContext, argContext)
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ SELECT id FROM permissions WHERE context = $1 AND action = $2
 `
 
 type GetPermissionIdParams struct {
-	Context string
+	Context int64
 	Action  string
 }
 

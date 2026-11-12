@@ -16,14 +16,14 @@ var DEFAULT_PERMS = map[ActionPermission]struct{}{
 }
 
 const DEFAULT_PERMS_ID = 1
-const DEFAULT_PERMS_ID2 = 12
+const DEFAULT_PERMS_ID2 = 2
 
-const DEFAULT_PERMS_CONTEXT1 = "C1"
-const DEFAULT_PERMS_CONTEXT2 = "C2"
+const DEFAULT_PERMS_CONTEXT1 = "1"
+const DEFAULT_PERMS_CONTEXT2 = "2"
 
 var DEFAULT_PERMS_SLC = []db.Permission{
-	db.Permission{ID: DEFAULT_PERMS_ID, Context: DEFAULT_PERMS_CONTEXT1, Action: PermissionSubmit.String()},
-	db.Permission{ID: DEFAULT_PERMS_ID2, Context: DEFAULT_PERMS_CONTEXT2, Action: PermissionPlusOne.String()},
+	db.Permission{ID: DEFAULT_PERMS_ID, Context: DEFAULT_PERMS_ID, Action: PermissionSubmit.String()},
+	db.Permission{ID: DEFAULT_PERMS_ID2, Context: DEFAULT_PERMS_ID2, Action: PermissionPlusOne.String()},
 }
 
 var DEFAULT_PERMISSIONS_SETS = []PermissionSet{
@@ -43,7 +43,7 @@ type mockBasePermissionMgrStore struct {
 
 	PermInserted         []db.InsertPermissionParams
 	PermDeleted          db.DeletePermissionParams
-	PermDeletedByContext string
+	PermDeletedByContext int64
 
 	RoleInserted    string
 	PermAddedToRole db.AddPermissionToRoleParams
@@ -53,6 +53,7 @@ func (ps *mockBasePermissionMgrStore) GetUserPermissions(_ context.Context, id i
 	if id == 24 {
 		return []db.Permission{}, fmt.Errorf("ERROR")
 	}
+	fmt.Printf("perm set given: %+v\n", DEFAULT_PERMS_SLC)
 	return DEFAULT_PERMS_SLC, nil
 }
 
@@ -66,7 +67,7 @@ func (ps *mockBasePermissionMgrStore) DeletePermission(_ context.Context, arg db
 	return nil
 }
 
-func (ps *mockBasePermissionMgrStore) DeletePermissionContext(_ context.Context, arg string) error {
+func (ps *mockBasePermissionMgrStore) DeletePermissionContext(_ context.Context, arg int64) error {
 	ps.PermDeletedByContext = arg
 	return nil
 }
@@ -87,6 +88,19 @@ func (ps *mockBasePermissionMgrStore) AddPermissionToRole(_ context.Context, arg
 
 func (ps *mockBasePermissionMgrStore) GetPermissionId(context.Context, db.GetPermissionIdParams) (int32, error) {
 	return DEFAULT_PERMS_ID, nil
+}
+
+func (ps *mockBasePermissionMgrStore) GetContextById(_ context.Context, id int64) (db.Context, error) {
+	if id == 1 {
+		return db.Context{Name: DEFAULT_PERMS_CONTEXT1, ID: 1}, nil
+	} else if id == 2 {
+		return db.Context{Name: DEFAULT_PERMS_CONTEXT2, ID: 2}, nil
+	}
+	return db.Context{Name: "a", ID: 22}, nil
+}
+
+func (ps *mockBasePermissionMgrStore) GetContextByName(context.Context, string) (db.Context, error) {
+	return db.Context{Name: "1", ID: 1}, nil
 }
 
 func (ps *mockBasePermissionMgrStore) ExecTx(_ context.Context, fn func(db.Querier) error) error {

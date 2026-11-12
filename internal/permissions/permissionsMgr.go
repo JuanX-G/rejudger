@@ -43,13 +43,18 @@ func (p *BasePermissionsManager) GetUserPermissions(ctx context.Context, userId 
 			return nil, err
 		}
 
-		set, ok := sets[row.Context]
+		appContext, err := p.store.GetContextById(ctx, row.Context)
+		if err != nil {
+			return nil, err
+		}
+
+		set, ok := sets[appContext.Name]
 		if !ok {
 			set = &PermissionSet{
-				Context:     row.Context,
+				Context:     appContext.Name,
 				Permissions: make(map[ActionPermission]struct{}),
 			}
-			sets[row.Context] = set
+			sets[appContext.Name] = set
 		}
 
 		set.Permissions[action] = struct{}{}
@@ -62,14 +67,23 @@ func (p *BasePermissionsManager) GetUserPermissions(ctx context.Context, userId 
 	return result, nil
 }
 
-func (p *BasePermissionsManager) InsertPermission(ctx context.Context, context string, action ActionPermission) error {
-	return p.store.InsertPermission(ctx, db.InsertPermissionParams{Context: context, Action: action.String()})
+func (p *BasePermissionsManager) InsertPermission(ctx context.Context, contextName string, action ActionPermission) error {
+	dbcontext, err := p.store.GetContextByName(ctx, contextName)
+	if err != nil {
+		return err
+	}
+	return p.store.InsertPermission(ctx, db.InsertPermissionParams{Context: dbcontext.ID, Action: action.String()})
 }
 
 func (p *BasePermissionsManager) InsertPermissionSet(ctx context.Context, set PermissionSet) error {
 	queryFn := func(q db.Querier) error {
+		dbcontext, err := p.store.GetContextByName(ctx, set.Context)
+		if err != nil {
+			return err
+		}
+
 		for k := range set.Permissions {
-			err := q.InsertPermission(ctx, db.InsertPermissionParams{Context: set.Context, Action: k.String()})
+			err := q.InsertPermission(ctx, db.InsertPermissionParams{Context: dbcontext.ID, Action: k.String()})
 			if err != nil {
 				return err
 			}
@@ -80,11 +94,19 @@ func (p *BasePermissionsManager) InsertPermissionSet(ctx context.Context, set Pe
 }
 
 func (p *BasePermissionsManager) DeletePermission(ctx context.Context, context string, action ActionPermission) error {
-	return p.store.DeletePermission(ctx, db.DeletePermissionParams{Context: context, Action: action.String()})
+	dbcontext, err := p.store.GetContextByName(ctx, context)
+	if err != nil {
+		return err
+	}
+	return p.store.DeletePermission(ctx, db.DeletePermissionParams{Context: dbcontext.ID, Action: action.String()})
 }
 
 func (p *BasePermissionsManager) DeletePermissionContext(ctx context.Context, context string) error {
-	return p.store.DeletePermissionContext(ctx, context)
+	dbcontext, err := p.store.GetContextByName(ctx, context)
+	if err != nil {
+		return nil
+	}
+	return p.store.DeletePermissionContext(ctx, dbcontext.ID)
 }
 
 func (p *BasePermissionsManager) InsertRole(ctx context.Context, name string) error {
@@ -104,7 +126,12 @@ func (p *BasePermissionsManager) AddPermissionToRole(ctx context.Context, permis
 }
 
 func (p *BasePermissionsManager) GetPermissionId(ctx context.Context, context string, action ActionPermission) (int, error) {
-	id, err := p.store.GetPermissionId(ctx, db.GetPermissionIdParams{Context: context, Action: action.String()})
+	dbcontext, err := p.store.GetContextByName(ctx, context)
+	if err != nil {
+		return -1, err
+	}
+
+	id, err := p.store.GetPermissionId(ctx, db.GetPermissionIdParams{Context: dbcontext.ID, Action: action.String()})
 	if err != nil {
 		return -1, err
 	}
@@ -128,9 +155,14 @@ func (p *BasePermissionsManager) AddRoleWithPermissions(ctx context.Context, rol
 			return err
 		}
 
+		dbcontext, err := p.store.GetContextByName(ctx, perms.Context)
+		if err != nil {
+			return err
+		}
+
 		ids := make([]int32, 0, len(perms.Permissions))
 		for k := range perms.Permissions {
-			id, err := q.GetPermissionId(ctx, db.GetPermissionIdParams{Context: perms.Context, Action: k.String()})
+			id, err := q.GetPermissionId(ctx, db.GetPermissionIdParams{Context: dbcontext.ID, Action: k.String()})
 			if err != nil {
 				return err
 
