@@ -7,12 +7,12 @@ import (
 	"net/http"
 	"os"
 	"revit/internal/artifactmanager"
+	"revit/internal/auth"
 	"revit/internal/config"
 	"revit/internal/logger"
 	"revit/internal/permissions"
 	"revit/internal/store"
 	"revit/services/artifactservice"
-	"revit/services/auth"
 	"revit/services/login"
 	"revit/services/submission"
 	userManagmentService "revit/services/userManagment"
@@ -69,7 +69,7 @@ func main() {
 		AuthMgr:     authMgr,
 		ArtifactSvc: artifactSvc,
 		BaseLogger:  loggerMgr,
-		AppContext:  "tech",
+		AppContext:  "peak",
 		Timeout:     0,
 	})
 
