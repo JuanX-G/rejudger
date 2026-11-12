@@ -1,6 +1,6 @@
 -- name: InsertSubmission :exec
-INSERT INTO submissions (content, author, hash)
-VALUES ($1, $2, $3);
+INSERT INTO submissions (content, author, hash, pipeline, pipeline_stage)
+VALUES ($1, $2, $3, $4, $5);
 
 -- name: AddPlusOne :exec
 INSERT INTO plus_ones (user_id, submission_id, pipeline_stage)
