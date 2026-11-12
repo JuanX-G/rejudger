@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"revit/internal/auth"
 	"revit/internal/logger"
 	"revit/internal/sharedmodels"
 	shared "revit/internal/sharedtesting"
 	services "revit/internal/testingservices"
-	"revit/services/auth"
 	"testing"
 )
 

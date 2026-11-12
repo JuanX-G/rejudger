@@ -5,8 +5,9 @@ package login
 import (
 	"context"
 	"net/http"
+	"revit/internal/auth"
+	"revit/internal/httpHelpers"
 	"revit/internal/permissions"
-	"revit/services/auth"
 )
 
 type LoginManager struct {
@@ -19,7 +20,7 @@ func NewLoginManager(ctx context.Context, queries loginStore, authService auth.A
 	return &LoginManager{authService: authService, store: queries, permissionsMgr: permissionMgr}
 }
 
-func (l *LoginManager) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("POST /session/login", l.LoginHandler())
-	mux.HandleFunc("GET /session/logout", l.LogoutHandler())
+func (lm *LoginManager) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("POST /session/login", httpHelpers.Adapt(lm.Login))
+	mux.HandleFunc("GET /session/logout", lm.LogoutHandler())
 }

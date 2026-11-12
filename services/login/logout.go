@@ -3,8 +3,8 @@ package login
 import (
 	"errors"
 	"net/http"
+	"revit/internal/auth"
 	"revit/internal/jsonHelpers"
-	"revit/services/auth"
 )
 
 type logoutResponse struct {

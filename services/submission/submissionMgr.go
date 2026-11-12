@@ -3,12 +3,13 @@ package submission
 import (
 	"context"
 	"net/http"
+	"revit/internal/auth"
 	"revit/internal/deadlines"
+	"revit/internal/httpHelpers"
 	"revit/internal/jsonHelpers"
 	"revit/internal/logger"
 	"revit/internal/permissions"
 	"revit/services/artifactservice"
-	"revit/services/auth"
 	"revit/services/publishingservice"
 	"time"
 )
@@ -20,7 +21,7 @@ type SubmissionService struct {
 	artifacts   artifactservice.ArtifactService
 	timeout     time.Duration
 	logger      logger.ScopedLogger
-	publisher   publishingservice.PublishingService
+	publishing  publishingservice.PublishingService
 	deadlineMgr deadlines.DeadlineMgr
 }
 
@@ -54,10 +55,11 @@ func NewSubmissionService(params SubmissionServiceParams) *SubmissionService {
 }
 
 func (ss *SubmissionService) RegisterRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("POST /submissions/submit", ss.guard.Lock(ss.HandleSubmission(), permissions.NewPermissionSet("", permissions.PermissionSubmit)))
-	mux.HandleFunc("POST /submissions/get_by_author", ss.guard.Lock(ss.HandleGetSubmissionByAuthor(), permissions.NewPermissionSet("", permissions.PermissionView)))
-	mux.HandleFunc("POST /submissions/get_by_author/after", ss.guard.Lock(ss.HandleGetSubmissionAfterByAuthor(), permissions.NewPermissionSet("", permissions.PermissionView)))
-	mux.HandleFunc("POST /submissions/get_by_hash", ss.guard.Lock(ss.HandleGetSubmissionByHash(), permissions.NewPermissionSet("", permissions.PermissionView)))
+	mux.HandleFunc("POST /submissions/submit", ss.guard.Lock(httpHelpers.Adapt(ss.Submit), permissions.NewPermissionSet("", permissions.PermissionSubmit)))
+	mux.HandleFunc("POST /submissions/get_by_author", ss.guard.Lock(httpHelpers.Adapt(ss.GetSubmissionByAuthor), permissions.NewPermissionSet("", permissions.PermissionView)))
+	mux.HandleFunc("POST /submissions/get_by_author/after", ss.guard.Lock(httpHelpers.Adapt(ss.GetSubmissionAfterByAuthor), permissions.NewPermissionSet("", permissions.PermissionView)))
+	mux.HandleFunc("POST /submissions/get_by_hash", ss.guard.Lock(httpHelpers.Adapt(ss.GetSubmissionByHash), permissions.NewPermissionSet("", permissions.PermissionView)))
+	mux.HandleFunc("POST /submissions/plus_one", ss.guard.Lock(httpHelpers.Adapt(ss.AddPlusOneToSubmission), permissions.NewPermissionSet("", permissions.PermissionPlusOne)))
 }
 
 func (ss *SubmissionService) requestCtx(r *http.Request) (context.Context, context.CancelFunc) {

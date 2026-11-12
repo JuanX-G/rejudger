@@ -1,13 +1,14 @@
 package submission
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 
+	"revit/internal/auth"
 	"revit/internal/db"
 	"revit/internal/hashing"
 	"revit/internal/httpHelpers"
-	"revit/internal/jsonHelpers"
-	"revit/services/auth"
 )
 
 type SubmissionQuery struct {
@@ -21,50 +22,41 @@ type SubmissionResponse struct {
 	Hash    string `json:"hash"`
 }
 
-func (s *SubmissionService) HandleSubmission() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		token, ok := auth.TokenFromContext(r.Context())
-		if !ok {
-			jsonHelpers.WriteJSON(w, http.StatusInternalServerError, SubmissionResponse{Success: false})
-			return
-		}
-
-		ctx, cancel := s.requestCtx(r)
-		defer cancel()
-
-		id, err := s.auth.GetUserId(token)
-		if err != nil {
-			jsonHelpers.WriteJSON(w, http.StatusInternalServerError, SubmissionResponse{Success: false})
-			return
-		}
-		user, err := s.store.GetUserById(ctx, id)
-		if err != nil {
-			jsonHelpers.WriteJSON(w, http.StatusInternalServerError, SubmissionResponse{Success: false})
-			return
-		}
-
-		var query SubmissionQuery
-		_, err = httpHelpers.RequestJsonToStruct(r, &query)
-		defer r.Body.Close()
-		if err != nil {
-			jsonHelpers.WriteJSON(w, http.StatusBadRequest, SubmissionResponse{Success: false})
-			return
-		}
-
-		hash := hashing.HashSubmission(query.Content, user.Name)
-
-		err = s.store.InsertSubmission(ctx, db.InsertSubmissionParams{Content: query.Content, Author: user.ID, Hash: hash})
-		if err != nil {
-			jsonHelpers.WriteJSON(w, http.StatusInternalServerError, SubmissionResponse{Success: false})
-			return
-		}
-		submission, err := s.store.GetSubmissionsByHash(ctx, hash)
-		if err != nil {
-			jsonHelpers.WriteJSON(w, http.StatusInternalServerError, SubmissionResponse{Success: false})
-			return
-		}
-
-		s.artifacts.ExpectArtifacts(query.Hashes, hash, submission.ID)
-		jsonHelpers.WriteJSON(w, http.StatusOK, SubmissionResponse{Success: true, Hash: hash})
+// Submit is now a neutral, transport-agnostic business logic method.
+func (ss *SubmissionService) Submit(ctx context.Context, query SubmissionQuery) (SubmissionResponse, error) {
+	authorID, ok := auth.GetIdFromContext(ctx)
+	if !ok {
+		return SubmissionResponse{}, httpHelpers.NewError(http.StatusUnauthorized, "unauthorized access")
 	}
+
+	user, err := ss.store.GetUserById(ctx, authorID)
+	if err != nil {
+		return SubmissionResponse{}, httpHelpers.NewError(http.StatusInternalServerError, "user not found")
+	}
+
+	hash := hashing.HashSubmission(query.Content, user.Name)
+
+	err = ss.store.InsertSubmission(ctx, db.InsertSubmissionParams{
+		Content:       query.Content,
+		Author:        user.ID,
+		Hash:          hash,
+		Pipeline:      19,
+		PipelineStage: 37,
+	})
+
+	if err != nil {
+		return SubmissionResponse{}, fmt.Errorf("failed to insert submission: %w", err)
+	}
+
+	submission, err := ss.store.GetSubmissionsByHash(ctx, hash)
+	if err != nil {
+		return SubmissionResponse{}, fmt.Errorf("failed to retrieve submission: %w", err)
+	}
+
+	ss.artifacts.ExpectArtifacts(query.Hashes, hash, submission.ID)
+
+	return SubmissionResponse{
+		Success: true,
+		Hash:    hash,
+	}, nil
 }
