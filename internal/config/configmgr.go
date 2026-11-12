@@ -7,7 +7,6 @@ import (
 	"os"
 	"revit/internal/db"
 	"revit/internal/jsonHelpers"
-	"revit/internal/permissions"
 	"revit/internal/store"
 
 	"github.com/jackc/pgx/v5"
@@ -16,10 +15,11 @@ import (
 )
 
 type ConfigMgr struct {
-	Base      *BaseConfig
-	Pipelines []Pipeline
-	Roles     []RoleConfig
-	store     ConfigStore
+	Base        *BaseConfig
+	Pipelines   []Pipeline
+	RoleMgr     *RoleConfigMgr
+	ContextsMgr *ContextsConfigMgr
+	store       ConfigStore
 }
 
 func NewConfigMgr(pool *pgxpool.Pool, fileName string) (*ConfigMgr, []forDirResult, error) {
@@ -31,6 +31,8 @@ func NewConfigMgr(pool *pgxpool.Pool, fileName string) (*ConfigMgr, []forDirResu
 		base.RemoteUserManagmentOn = true
 	}
 
+	var totalResults []forDirResult
+
 	pipelines := []Pipeline{}
 	pipelinesResults, err := forDir(base.PipelineConfigPath, func(file *os.File) error {
 		pipeline, err := LoadPipelineConfig(file)
@@ -40,113 +42,24 @@ func NewConfigMgr(pool *pgxpool.Pool, fileName string) (*ConfigMgr, []forDirResu
 		pipelines = append(pipelines, pipeline)
 		return nil
 	})
+	if err != nil {
+		return nil, pipelinesResults, err
+	}
+	cfgStore := store.NewStore(pool)
 
+	roleMgr, results, err := MakeRoleConfigMgrAndLoad(cfgStore, base.RoleConfigPath)
+	totalResults = append(totalResults, results...)
 	if err != nil {
 		return nil, pipelinesResults, err
 	}
 
-	roles := []RoleConfig{}
-	roleResults, err := forDir(base.RoleConfigPath, func(file *os.File) error {
-		role, err := LoadRolesConfigFromFile(file)
-		if err != nil {
-			return err
-		}
-
-		roles = append(roles, role)
-		return nil
-	})
-	totalResults := append(pipelinesResults, roleResults...)
+	contextsMgr, results, err := MakeContextsMgrAndLoad(cfgStore, base.ContextConfigPath)
+	totalResults = append(totalResults, results...)
 	if err != nil {
 		return nil, pipelinesResults, err
 	}
 
-	return &ConfigMgr{Base: base, Pipelines: pipelines, Roles: roles, store: store.NewStore(pool)}, totalResults, nil
-}
-
-// Sync roles from config. Deletes roles not listed in the config and not asigned to any users.
-func (c *ConfigMgr) SyncRoles(ctx context.Context) error {
-	confNames := make(map[string]struct{})
-	for _, role := range c.Roles {
-		confNames[role.Name] = struct{}{}
-		if err := c.syncRole(ctx, role); err != nil {
-			return err
-		}
-	}
-
-	rolesArr, err := c.store.GetUnusedRoles(ctx)
-	if err != nil {
-		return err
-	}
-
-	for _, role := range rolesArr {
-		if _, ok := confNames[role.Name]; !ok {
-			err := c.store.DeleteRoleByName(ctx, role.Name)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-// Sync a single role.
-func (c *ConfigMgr) syncRole(ctx context.Context, role RoleConfig) error {
-	permissionSets := make(map[string]permissions.PermissionSet, len(role.Perms))
-	for _, perm := range role.Perms {
-		set, ok := permissionSets[perm.Context]
-		if !ok {
-			permissionSets[perm.Context] = permissions.PermissionSet{Context: perm.Context, Permissions: map[permissions.ActionPermission]struct{}{perm.Action: struct{}{}}}
-		} else {
-			set.Permissions[perm.Action] = struct{}{}
-			permissionSets[perm.Context] = set
-		}
-	}
-	queryFn := func(q db.Querier) error {
-		if err := q.InsertRole(ctx, role.Name); err != nil {
-			return err
-		}
-
-		ids := []int32{}
-
-		for _, set := range permissionSets {
-			if err := permissions.QueriesInsertPermissionSet(ctx, q, set); err != nil {
-				return err
-			}
-
-			for action := range set.Permissions {
-				id, err := q.GetPermissionId(ctx, db.GetPermissionIdParams{
-					Context: set.Context,
-					Action:  action.String(),
-				})
-
-				if err != nil {
-					if errors.Is(err, pgx.ErrNoRows) {
-						continue
-					}
-					return err
-				}
-
-				ids = append(ids, id)
-			}
-		}
-
-		dbrole, err := q.GetRoleByName(ctx, role.Name)
-		if err != nil {
-			return err
-		}
-
-		for _, id := range ids {
-			if err := q.AddPermissionToRole(ctx, db.AddPermissionToRoleParams{
-				RoleID:       dbrole.ID,
-				PermissionID: id,
-			}); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	}
-	return c.store.ExecTx(ctx, queryFn)
+	return &ConfigMgr{Base: base, Pipelines: pipelines, RoleMgr: roleMgr, ContextsMgr: contextsMgr, store: cfgStore}, totalResults, nil
 }
 
 // Sync pipeline stage definitions.
@@ -286,7 +199,11 @@ func (c *ConfigMgr) SyncPipelines(ctx context.Context) error {
 }
 
 func (c *ConfigMgr) SyncAll(ctx context.Context) error {
-	err := c.SyncRoles(ctx)
+	err := c.ContextsMgr.SyncContexts(ctx)
+	if err != nil {
+		return err
+	}
+	err = c.RoleMgr.SyncRoles(ctx, c.ContextsMgr)
 	if err != nil {
 		return err
 	}

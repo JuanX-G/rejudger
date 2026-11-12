@@ -7,6 +7,7 @@ type BaseConfig struct {
 	PipelineConfigPath    string `yaml:"pipeline_config_path"`
 	RoleConfigPath        string `yaml:"role_config_path"`
 	UserConfigPath        string `yaml:"user_config_path"`
+	ContextConfigPath     string `yaml:"context_config_path"`
 }
 
 // Load the basic config that lists the locations of other configs and
