@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"revit/internal/customSync"
 	"revit/internal/permissions"
 	"sync"
@@ -127,11 +128,14 @@ func (a *EmbeddedAuthManager) HasPermission(token string, context string, requir
 			return
 		}
 		perms, ok := s.Permissions[context]
+		fmt.Printf("perms %+v, for session of user: %s", perms, s.UserName)
 		if !ok {
+			fmt.Printf("denied")
 			verifyErr = AuthError{errType: AuthErrorForbidden}
 			return
 		}
 		if !permissions.HasPermission(perms, required) {
+			fmt.Printf("denied")
 			verifyErr = AuthError{errType: AuthErrorForbidden}
 			return
 		}
@@ -172,13 +176,16 @@ func (a *EmbeddedAuthManager) HasAllPermissions(token string, context string, re
 			return
 		}
 		perms, ok := s.Permissions[context]
+		fmt.Printf("perms %+v, for session of user: %s", perms, s.UserName)
 		if !ok {
+			fmt.Printf("denied by all")
 			verifyErr = AuthError{errType: AuthErrorForbidden}
 			return
 		}
 
 		for _, req := range required {
 			if !permissions.HasPermission(perms, req) {
+				fmt.Printf("denied by all")
 				verifyErr = AuthError{errType: AuthErrorForbidden}
 				return
 			}

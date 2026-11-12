@@ -1,8 +1,8 @@
 package testingservices
 
 import (
+	"revit/internal/auth"
 	"revit/internal/permissions"
-	"revit/services/auth"
 	"time"
 )
 

@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"net/http"
 
 	"revit/internal/permissions"
@@ -32,6 +33,7 @@ func (a *EmbeddedAuthManager) HasPermissionMiddleware(next http.HandlerFunc, con
 			return
 		}
 		if err := a.HasPermission(token, context, required); err != nil {
+			fmt.Printf("perms req: %+v", required)
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
