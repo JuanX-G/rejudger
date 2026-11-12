@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"time"
 
+	"revit/internal/auth"
 	db "revit/internal/db"
 	"revit/internal/jsonHelpers"
 	"revit/internal/permissions"
 	"revit/internal/store"
-	"revit/services/auth"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
