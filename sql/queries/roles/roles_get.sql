@@ -2,9 +2,9 @@
 SELECT r.*
 FROM roles r
 WHERE NOT EXISTS (
-    SELECT 1
+    SELECT *
     FROM user_roles ur
-    WHERE r.id = ur.role_id
+    WHERE r.id = ur.role_id LIMIT 1
 );
 
 -- name: GetRolePermissions :many

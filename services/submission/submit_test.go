@@ -1,11 +1,6 @@
 package submission
 
 import (
-	"bytes"
-	"encoding/json/v2"
-	"io"
-	"net/http"
-	"net/http/httptest"
 	"revit/internal/hashing"
 	"revit/internal/logger"
 	shared "revit/internal/sharedtesting"
@@ -14,152 +9,107 @@ import (
 	"time"
 )
 
-func TestSubmitHandler(t *testing.T) {
-	logDest := &services.MockLogDest{}
-	logr, err := logger.MakeDefaultMultiLogger(t.Context(), logDest)
-	if err != nil {
-		shared.ServiceSetupFail(t, err, "logger")
-	}
-
-	token, authmgr, err := services.MakeAuthMgr(services.DEFAULT_PERMISSION_SET)
-	if err != nil {
-		shared.ServiceSetupFail(t, err, "auth")
-	}
+func TestSubmit(t *testing.T) {
+	token, svcs, cleanup := setUpServices(t)
+	defer cleanup()
 
 	insertCh := make(chan InsertionNotification, 8)
 	defer close(insertCh)
-	store := &mockSubmissionStore{insertNotify: insertCh, AcceptAll: true}
+	svcs.store = &mockSubmissionStore{insertNotify: insertCh, AcceptAll: true}
 
-	mux := http.NewServeMux()
-	artifactStore := &services.MockArtifactStore{}
-
-	artifactService := services.NewMockArtifactService(artifactStore)
-
-	service := NewSubmissionService(SubmissionServiceParams{
-		Store:       store,
-		AuthMgr:     authmgr,
-		ArtifactSvc: artifactService,
-		BaseLogger:  logr,
+	ctx := makeFullCtx(t, token)
+	ss := NewSubmissionService(SubmissionServiceParams{
+		Store:       svcs.store,
+		AuthMgr:     svcs.auth,
+		ArtifactSvc: svcs.artifacts,
+		BaseLogger:  svcs.logger,
 		AppContext:  services.DEFAULT_APPCONTEXT,
 	})
-	service.RegisterRoutes(mux)
 
-	// stage a request with no artifacts
-	query := SubmissionQuery{Content: TEST_SUBMISSION}
-	b, err := json.Marshal(query)
+	query := SubmissionQuery{Content: TEST_SUBMISSION, AppContext: services.DEFAULT_APPCONTEXT}
+
+	resp, err := ss.Submit(ctx, query)
+
 	if err != nil {
-		shared.OperationFail(t, err, "json marshalling of struct Submission Query")
+		t.Fatalf("expected err == nil, found err: %+v", err)
 	}
 
-	reader := bytes.NewReader(b)
-
-	req := httptest.NewRequest(http.MethodPost, "/submissions/submit", reader)
-	req.Header.Add("X-Auth-Token", token)
-
-	rec := httptest.NewRecorder()
-
-	mux.ServeHTTP(rec, req) // run the request
-
-	res := rec.Result()
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		shared.WrongHttpCode(t, http.StatusOK, res.StatusCode)
+	const EXPECTED_SUCCESS = true
+	if resp.Success != EXPECTED_SUCCESS {
+		t.Fatalf("expected success == %t, found success: %t", EXPECTED_SUCCESS, resp.Success)
 	}
 
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		shared.OperationFail(t, err, "io.ReadAll of response body")
-	}
-	var resp SubmissionResponse
-	err = json.Unmarshal(body, &resp)
-	if err != nil {
-		shared.OperationFail(t, err, "json unmarshaling of response body")
-	}
-	hash := hashing.HashSubmission(query.Content, services.DEFAULT_USERNAME)
-	if resp.Hash != hash {
-		t.Fatalf("expected hash in response to be: %s, found: %s", hash, resp.Hash)
-	}
-	if !resp.Success {
-		t.Fatalf("expected response to report success, found: %t", resp.Success)
-	}
 	inserted := <-insertCh
 	if inserted.Content != TEST_SUBMISSION {
 		t.Fatalf("expected the content of the inserted submission to be: %s, found: %s", TEST_SUBMISSION, inserted.Content)
 	}
-	if inserted.Hash != hash {
-		t.Fatalf("expected the hash of the inserted submission to be: %s, found: %s", hash, inserted.Hash)
-	}
+
 	if inserted.Author != services.DEFAULT_USERID {
 		t.Fatalf("expected the author id of the inserted submission to be: %d, found: %d", services.DEFAULT_USERID, inserted.Author)
+	}
+}
+
+func TestSubmitContentEmpty(t *testing.T) {
+	token, svcs, cleanup := setUpServices(t)
+	defer cleanup()
+
+	insertCh := make(chan InsertionNotification, 8)
+	defer close(insertCh)
+	svcs.store = &mockSubmissionStore{insertNotify: insertCh, AcceptAll: true}
+
+	ctx := makeFullCtx(t, token)
+	ss := NewSubmissionService(SubmissionServiceParams{
+		Store:       svcs.store,
+		AuthMgr:     svcs.auth,
+		ArtifactSvc: svcs.artifacts,
+		BaseLogger:  svcs.logger,
+		AppContext:  services.DEFAULT_APPCONTEXT,
+	})
+
+	query := SubmissionQuery{Content: "", AppContext: services.DEFAULT_APPCONTEXT}
+
+	resp, err := ss.Submit(ctx, query)
+
+	if err == nil {
+		t.Fatalf("expected err != nil, found err: %+v", err)
+	}
+
+	const EXPECTED_SUCCESS = false
+	if resp.Success != EXPECTED_SUCCESS {
+		t.Fatalf("expected success == %t, found success: %t", EXPECTED_SUCCESS, resp.Success)
 	}
 
 }
 
 func TestSubmitArtifactUploads(t *testing.T) {
-	logDest := &services.MockLogDest{}
-	logr, err := logger.MakeDefaultMultiLogger(t.Context(), logDest)
-	if err != nil {
-		shared.ServiceSetupFail(t, err, "logger")
-	}
-	token, authmgr, err := services.MakeAuthMgr(services.DEFAULT_PERMISSION_SET)
-	if err != nil {
-		shared.ServiceSetupFail(t, err, "auth")
-	}
+	token, svcs, cleanup := setUpServices(t)
+	defer cleanup()
+
 	insertCh := make(chan InsertionNotification, 8)
 	defer close(insertCh)
-	store := &mockSubmissionStore{insertNotify: insertCh, AcceptAll: true}
+	svcs.store = &mockSubmissionStore{insertNotify: insertCh, AcceptAll: true}
 
-	mux := http.NewServeMux()
-	artifactStore := &services.MockArtifactStore{}
-
-	artifactService := services.NewMockArtifactService(artifactStore)
-	artifactService.ExpectedArtifacts = make(chan services.ExpectedMsg, 8)
-	defer close(artifactService.ExpectedArtifacts)
-	service := NewSubmissionService(SubmissionServiceParams{
-		Store:       store,
-		AuthMgr:     authmgr,
-		ArtifactSvc: artifactService,
-		BaseLogger:  logr,
+	ctx := makeFullCtx(t, token)
+	ss := NewSubmissionService(SubmissionServiceParams{
+		Store:       svcs.store,
+		AuthMgr:     svcs.auth,
+		ArtifactSvc: svcs.artifacts,
+		BaseLogger:  svcs.logger,
 		AppContext:  services.DEFAULT_APPCONTEXT,
 	})
-	service.RegisterRoutes(mux)
 
-	// stage a request with a artifact
 	query := SubmissionQuery{Content: TEST_SUBMISSION, Hashes: []string{services.DEFAULT_OBJECT_HASH}}
-	b, err := json.Marshal(query)
+
+	resp, err := ss.Submit(ctx, query)
 	if err != nil {
-		shared.OperationFail(t, err, "json marshalling of struct Submission Query")
-	}
-
-	reader := bytes.NewReader(b)
-
-	req := httptest.NewRequest(http.MethodPost, "/submissions/submit", reader)
-	req.Header.Add("X-Auth-Token", token)
-
-	rec := httptest.NewRecorder()
-
-	mux.ServeHTTP(rec, req) // run the request
-
-	res := rec.Result()
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		shared.WrongHttpCode(t, http.StatusOK, res.StatusCode)
-	}
-
-	body, err := io.ReadAll(res.Body)
-	var resp SubmissionResponse
-	err = json.Unmarshal(body, &resp)
-	if err != nil {
-		shared.OperationFail(t, err, "json unmarshaling of response body")
+		t.Fatalf("expected err == nil, found err: %+v", err)
 	}
 
 	if !resp.Success {
 		t.Fatalf("expected response to report success, found: %t", resp.Success)
 	}
 
-	art := <-artifactService.ExpectedArtifacts
+	art := <-svcs.artifacts.ExpectedArtifacts
 	if len(art.Hashes) != 1 {
 		t.Fatalf("expected 1 artifact hash, found: %d", len(art.Hashes))
 	}

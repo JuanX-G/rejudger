@@ -46,7 +46,7 @@ WHERE NOT EXISTS (
 NOT EXISTS (
     SELECT 1
     FROM permissions ps
-    WHERE rl.context = c.id
+    WHERE ps.context = c.id
 )
 `
 

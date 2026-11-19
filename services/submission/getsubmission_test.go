@@ -1,11 +1,8 @@
 package submission
 
 import (
-	"bytes"
-	"encoding/json/v2"
+	"context"
 	"net/http"
-	"net/http/httptest"
-	"reflect"
 	"revit/internal/auth"
 	"revit/internal/logger"
 	"revit/internal/sharedmodels"
@@ -18,11 +15,11 @@ type testServices struct {
 	logger    *logger.MultiLogger
 	auth      auth.AuthManager
 	store     submissionStore
-	artifacts *services.MockArtifactStore
+	artifacts *services.MockArtifactService
 	mux       *http.ServeMux
 }
 
-func setUpServices(t testing.TB) (string, testServices) {
+func setUpServices(t testing.TB) (string, testServices, func()) {
 	logDest := &services.MockLogDest{}
 	logr, err := logger.MakeDefaultMultiLogger(t.Context(), logDest)
 	if err != nil {
@@ -35,15 +32,16 @@ func setUpServices(t testing.TB) (string, testServices) {
 	store := &mockSubmissionStore{}
 
 	mux := http.NewServeMux()
-	artifactStore := &services.MockArtifactStore{}
+	artifactSvc := &services.MockArtifactService{}
 
-	artifactService := services.NewMockArtifactService(artifactStore)
-	artifactService.ExpectedArtifacts = make(chan services.ExpectedMsg, 8)
-	defer close(artifactService.ExpectedArtifacts)
+	artifactSvc.ExpectedArtifacts = make(chan services.ExpectedMsg, 8)
+	cleanupFn := func() {
+		close(artifactSvc.ExpectedArtifacts)
+	}
 	service := NewSubmissionService(SubmissionServiceParams{
 		Store:       store,
 		AuthMgr:     authmgr,
-		ArtifactSvc: artifactService,
+		ArtifactSvc: artifactSvc,
 		BaseLogger:  logr,
 		AppContext:  services.DEFAULT_APPCONTEXT,
 	})
@@ -52,126 +50,128 @@ func setUpServices(t testing.TB) (string, testServices) {
 		logger:    logr,
 		auth:      authmgr,
 		store:     store,
-		artifacts: artifactStore,
+		artifacts: artifactSvc,
 		mux:       mux,
-	}
+	}, cleanupFn
+}
+
+func setUpTestSubmissionService(t *testing.T) (context.Context, testServices, *SubmissionService) {
+	token, svcs, cleanup := setUpServices(t)
+	defer cleanup()
+	ctx := makeFullCtx(t, token)
+	return ctx, svcs, NewSubmissionService(SubmissionServiceParams{
+		Store:       svcs.store,
+		AuthMgr:     svcs.auth,
+		ArtifactSvc: svcs.artifacts,
+		BaseLogger:  svcs.logger,
+		AppContext:  services.DEFAULT_APPCONTEXT,
+	})
+}
+
+func makeFullCtx(t *testing.T, token string) context.Context {
+	return auth.ContextWithAppCtx(
+		auth.ContextWithId(
+			auth.ContextWithToken(t.Context(), token),
+			DEFAULT_SUBMISSION_1.Author,
+		),
+		services.DEFAULT_APPCONTEXT,
+	)
 }
 
 // Test fetching all submissions for a user.
 func TestGetSubmission(t *testing.T) {
-	token, svcs := setUpServices(t)
-
 	query := GetSubmissionByAuthorQuery{Email: services.DEFAULT_EMAIL, Offset: 0}
-	b, err := json.Marshal(query)
+	ctx, _, ss := setUpTestSubmissionService(t)
+
+	resp, err := ss.GetSubmissionByAuthor(ctx, query)
 	if err != nil {
-		shared.OperationFail(t, err, "json marshalling of struct GetSubmissionByAuthorQuery")
+		t.Fatalf("expected err == nil, found err: %+v", err)
 	}
 
-	reader := bytes.NewReader(b)
-	req := httptest.NewRequest(http.MethodPost, "/submissions/get_by_author", reader)
-	req.Header.Add("X-Auth-Token", token)
-
-	checkFn := func(t testing.TB, resp GetSubmissionsResponse) {
-		if !resp.Success {
-			t.Fatalf("expected response to report success = %t, found: %t", true, resp.Success)
-		}
-		if len(resp.Submissions) != 2 {
-			t.Fatalf("sent offset = %d, email = %s, found: %d submission returned", query.Offset, query.Email, len(resp.Submissions))
-		}
-		if !reflect.DeepEqual(resp.Submissions, DEFAULT_RESP_SUBMISSIONS) {
-			t.Fatalf("found submissions: %+v, expected: %+v", resp.Submissions, DEFAULT_RESP_SUBMISSIONS)
-		}
+	const EXPECTED_SUBS = 2
+	if len(resp.Submissions) != EXPECTED_SUBS {
+		t.Fatalf("expected to find %d submissions, found: %d", EXPECTED_SUBS, len(resp.Submissions))
 	}
 
-	shared.HttpTest(t, shared.HttpTestParams[GetSubmissionsResponse]{
-		Mux:          svcs.mux,
-		Req:          req,
-		ExpectedCode: http.StatusOK,
-		RespChecker:  checkFn,
-	})
+	if resp.Submissions[0] != sharedmodels.MapDBSubmissionToModel(DEFAULT_SUBMISSION_1, DEFAULT_USERDATA) {
+		t.Fatalf("expected submission: %+v, found: %+v", DEFAULT_RESP_SUBMISSION_1, resp.Submissions[0])
+	}
+
+	if resp.Submissions[1] != sharedmodels.MapDBSubmissionToModel(DEFAULT_SUBMISSION_2, DEFAULT_USERDATA) {
+		t.Fatalf("expected submission: %+v, found: %+v", DEFAULT_RESP_SUBMISSION_2, resp.Submissions[1])
+	}
+}
+
+func TestGetSubmissionInvalidEmail(t *testing.T) {
+	query := GetSubmissionByAuthorQuery{Email: "NOT-AN_EMAIL_HERE11192.FOR_SUR-E99()@NOT_HERE.YOU.WISH", Offset: 0}
+	ctx, _, ss := setUpTestSubmissionService(t)
+
+	resp, err := ss.GetSubmissionByAuthor(ctx, query)
+	if err == nil {
+		t.Fatalf("expected err != nil, found err: %+v", err)
+	}
+
+	const EXPECTED_SUBS = 0
+	if len(resp.Submissions) != EXPECTED_SUBS {
+		t.Fatalf("expected to find %d submissions, found: %d", EXPECTED_SUBS, len(resp.Submissions))
+	}
+
+	const EXPECTED_RESULT = false
+	if resp.Success != EXPECTED_RESULT {
+		t.Fatalf("expected success: %t, found: %t", EXPECTED_RESULT, resp.Success)
+	}
 }
 
 // Test getting submissions with an offset into the list
 func TestGetSubmissionOffset(t *testing.T) {
-	token, svcs := setUpServices(t)
+	query := GetSubmissionByAuthorQuery{Email: services.DEFAULT_EMAIL, Offset: 1}
+	ctx, _, ss := setUpTestSubmissionService(t)
 
-	query := GetSubmissionByAuthorQuery{Email: services.DEFAULT_EMAIL, Offset: 1, Size: 1}
-	b, err := json.Marshal(query)
+	resp, err := ss.GetSubmissionByAuthor(ctx, query)
 	if err != nil {
-		shared.OperationFail(t, err, "json marshalling of struct GetSubmissionByAuthorQuery")
+		t.Fatalf("expected err == nil, found err: %+v", err)
 	}
 
-	reader := bytes.NewReader(b)
-
-	req := httptest.NewRequest(http.MethodPost, "/submissions/get_by_author", reader)
-	req.Header.Add("X-Auth-Token", token)
-
-	checkFn := func(t testing.TB, resp GetSubmissionsResponse) {
-		if !resp.Success {
-			t.Fatalf("expected response to report success = %t, found: %t", true, resp.Success)
-		}
-		if len(resp.Submissions) != 1 {
-			t.Fatalf("sent offset = %d, email = %s, found: %d submission returned", query.Offset, query.Email, len(resp.Submissions))
-		}
-		if !reflect.DeepEqual(resp.Submissions, []sharedmodels.Submission{DEFAULT_RESP_SUBMISSION_2}) {
-			t.Fatalf("found submissions: %+v, expected: %+v", resp.Submissions, DEFAULT_RESP_SUBMISSIONS)
-		}
+	const EXPECTED_SUBS = 1
+	if len(resp.Submissions) != EXPECTED_SUBS {
+		t.Fatalf("expected to find %d submissions, found: %d", EXPECTED_SUBS, len(resp.Submissions))
 	}
 
-	shared.HttpTest(t, shared.HttpTestParams[GetSubmissionsResponse]{
-		Mux:          svcs.mux,
-		Req:          req,
-		ExpectedCode: http.StatusOK,
-		RespChecker:  checkFn,
-	})
-}
-
-func testGetSubmissionByHash[R any](t *testing.T, hash, url string, code int, checkFn func(t testing.TB, resp R)) *testServices {
-	token, svcs := setUpServices(t)
-
-	query := GetSubmissionByHash{Hash: hash}
-	b, err := json.Marshal(query)
-	if err != nil {
-		shared.OperationFail(t, err, "json marshalling of struct")
+	if resp.Submissions[0] != sharedmodels.MapDBSubmissionToModel(DEFAULT_SUBMISSION_2, DEFAULT_USERDATA) {
+		t.Fatalf("expected submission: %+v, found: %+v", DEFAULT_RESP_SUBMISSION_1, resp.Submissions[0])
 	}
 
-	reader := bytes.NewReader(b)
-
-	req := httptest.NewRequest(http.MethodPost, url, reader)
-	req.Header.Add("X-Auth-Token", token)
-
-	shared.HttpTest(t, shared.HttpTestParams[R]{
-		Mux:          svcs.mux,
-		Req:          req,
-		ExpectedCode: code,
-		RespChecker:  checkFn,
-	})
-	return &svcs
 }
 
 func TestGetSubmissionByHash(t *testing.T) {
-	checkFn := func(t testing.TB, resp GetSubmissionResponse) {
-		if !resp.Success {
-			t.Fatalf("expected response to report success = %t, found: %t", true, resp.Success)
-		}
+	query := GetSubmissionByHash{Hash: DEFAULT_SUBMISSION_1.Hash}
+	ctx, _, ss := setUpTestSubmissionService(t)
 
-		if resp.Submission != DEFAULT_RESP_SUBMISSION_1 {
-			t.Fatalf("expeted submission: %+v, found: %+v", DEFAULT_RESP_SUBMISSION_1, resp.Submission)
-		}
+	resp, err := ss.GetSubmissionByHash(ctx, query)
+	if err != nil {
+		t.Fatalf("expected err == nil, found err: %+v", err)
 	}
-	testGetSubmissionByHash(t, DEFAULT_RESP_SUBMISSION_1.Hash, "/submissions/get_by_hash", 200, checkFn)
+	if resp.Submission != DEFAULT_RESP_SUBMISSION_1 {
+		t.Fatalf("expected submission: %+v, found: %+v", DEFAULT_RESP_SUBMISSION_1, resp.Submission)
+	}
 }
 
 func TestGetSubmissionByEmptyHash(t *testing.T) {
-	checkFn := func(t testing.TB, resp GetSubmissionResponse) {
-		if resp.Success {
-			t.Fatalf("expected response to report success = %t, found: %t", false, resp.Success)
-		}
+	query := GetSubmissionByHash{Hash: ""}
+	ctx, _, ss := setUpTestSubmissionService(t)
 
-		empty := sharedmodels.Submission{}
-		if resp.Submission != empty {
-			t.Fatalf("expeted submission: %+v, found: %+v", DEFAULT_RESP_SUBMISSION_1, resp.Submission)
-		}
+	resp, err := ss.GetSubmissionByHash(ctx, query)
+	if err == nil {
+		t.Fatalf("expected err != nil, found err: %+v", err)
 	}
-	testGetSubmissionByHash(t, "", "/submissions/get_by_hash", 400, checkFn)
+
+	const EXPECTED_RESULT = false
+	if resp.Success != EXPECTED_RESULT {
+		t.Fatalf("expected success: %t, found: %t", EXPECTED_RESULT, resp.Success)
+	}
+
+	submission := sharedmodels.Submission{}
+	if resp.Submission != submission {
+		t.Fatalf("expected submission: %+v, found: %+v", submission, resp.Submission)
+	}
 }

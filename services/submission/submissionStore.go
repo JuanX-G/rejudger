@@ -21,4 +21,8 @@ type submissionStore interface {
 	GetStageById(ctx context.Context, id int64) (db.Stage, error)
 	AddOneToSubmissionStageById(ctx context.Context, id int64) error
 	GetVetosBySubmissionId(ctx context.Context, submissionID int64) ([]db.Veto, error)
+	DeletePlusOne(ctx context.Context, arg db.DeletePlusOneParams) error
+	GetPipelineByContextName(ctx context.Context, name string) (db.Pipeline, error)
+	GetFirstPipelineStageID(ctx context.Context, pipelineID int64) (int64, error)
+	GetStagePositionByID(ctx context.Context, id int64) (int32, error)
 }

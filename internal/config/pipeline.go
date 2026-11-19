@@ -10,6 +10,7 @@ import (
 type Pipeline struct {
 	Name        string          `yaml:"name" json:"name"`
 	Description string          `yaml:"description" json:"description"`
+	Context     string          `yaml:"context" json:"context"` //TODO check if that context exists
 	Stages      []PipelineStage `yaml:"stages" json:"stages"`
 }
 

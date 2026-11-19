@@ -46,22 +46,15 @@ func (ss *SubmissionService) AddPlusOneToSubmission(ctx context.Context, query A
 		return AddPlusOneToSubmissionResponse{}, httpHelpers.NewError(http.StatusInternalServerError, "user id missing in context")
 	}
 
-	currentPlusOnes, err := ss.store.CountPlusOnes(ctx, db.CountPlusOnesParams{
-		SubmissionID:  submission.ID,
-		PipelineStage: submission.PipelineStage,
-	})
+	position, err := ss.store.GetStagePositionByID(ctx, submission.PipelineStage)
 	if err != nil {
-		ss.logger.LogFrom(ctx,
-			"add plus one to submission handler",
-			fmt.Sprintf("failed to retrive plus ones for submission with hash: %s, error reported: %+v", query.Hash, err),
-			logger.LogLevelError,
-		)
-		return AddPlusOneToSubmissionResponse{}, httpHelpers.NewError(http.StatusInternalServerError, "failed to count plus ones")
+		// TODO: log
+		return AddPlusOneToSubmissionResponse{}, httpHelpers.NewError(http.StatusInternalServerError, "failed to retrieve pipeline stage")
 	}
 
 	stageId, err := ss.store.GetPipelineStage(ctx, db.GetPipelineStageParams{
 		PipelineID: submission.Pipeline,
-		Position:   submission.PipelineStage,
+		Position:   position,
 	})
 	if err != nil {
 		ss.logger.LogFrom(ctx,
@@ -70,6 +63,19 @@ func (ss *SubmissionService) AddPlusOneToSubmission(ctx context.Context, query A
 			logger.LogLevelError,
 		)
 		return AddPlusOneToSubmissionResponse{}, httpHelpers.NewError(http.StatusInternalServerError, "failed to retrieve pipeline stage")
+	}
+
+	currentPlusOnes, err := ss.store.CountPlusOnes(ctx, db.CountPlusOnesParams{
+		SubmissionID:  submission.ID,
+		PipelineStage: stageId.ID,
+	})
+	if err != nil {
+		ss.logger.LogFrom(ctx,
+			"add plus one to submission handler",
+			fmt.Sprintf("failed to retrive plus ones for submission with hash: %s, error reported: %+v", query.Hash, err),
+			logger.LogLevelError,
+		)
+		return AddPlusOneToSubmissionResponse{}, httpHelpers.NewError(http.StatusInternalServerError, "failed to count plus ones")
 	}
 
 	stage, err := ss.store.GetStageById(ctx, stageId.StageID)
@@ -185,10 +191,12 @@ func (ss *SubmissionService) AddPlusOneToSubmission(ctx context.Context, query A
 		}
 	}
 
+	//TODO: Check if this is correct (a.k.a. press x to doubt[?])
+
 	err = ss.store.AddPlusOne(ctx, db.AddPlusOneParams{
 		UserID:        userid,
 		SubmissionID:  submission.ID,
-		PipelineStage: submission.PipelineStage,
+		PipelineStage: stageId.StageID,
 	})
 	if err != nil {
 		ss.logger.LogFrom(ctx,

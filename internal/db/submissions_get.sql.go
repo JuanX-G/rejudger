@@ -35,7 +35,7 @@ WHERE submission_id = $1 AND pipeline_stage = $2
 
 type CountPlusOnesParams struct {
 	SubmissionID  int64
-	PipelineStage int32
+	PipelineStage int64
 }
 
 func (q *Queries) CountPlusOnes(ctx context.Context, arg CountPlusOnesParams) (int64, error) {
@@ -201,7 +201,7 @@ WHERE pipeline = $1 AND pipeline_stage = $2
 
 type GetSubmissionsInStageParams struct {
 	Pipeline      int64
-	PipelineStage int32
+	PipelineStage int64
 }
 
 type GetSubmissionsInStageRow struct {

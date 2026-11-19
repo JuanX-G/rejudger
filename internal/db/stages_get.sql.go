@@ -113,3 +113,15 @@ func (q *Queries) GetStageByVersion(ctx context.Context, version []byte) (Stage,
 	)
 	return i, err
 }
+
+const getStagePositionByID = `-- name: GetStagePositionByID :one
+SELECT position FROM pipeline_stages
+WHERE id = $1
+`
+
+func (q *Queries) GetStagePositionByID(ctx context.Context, id int64) (int32, error) {
+	row := q.db.QueryRow(ctx, getStagePositionByID, id)
+	var position int32
+	err := row.Scan(&position)
+	return position, err
+}

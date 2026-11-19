@@ -205,11 +205,13 @@ func (c *ConfigMgr) SyncAll(ctx context.Context) error {
 	}
 	err = c.RoleMgr.SyncRoles(ctx, c.ContextsMgr)
 	if err != nil {
+		println("not rolled")
 		return err
 	}
 
 	err = c.SyncPipelines(ctx)
 	if err != nil {
+		println("not piped")
 		return err
 	}
 

@@ -38,7 +38,7 @@ type SubmissionServiceParams struct {
 }
 
 func NewSubmissionService(params SubmissionServiceParams) *SubmissionService {
-	guard := auth.NewEndpointGuard(params.AuthMgr, params.AppContext)
+	guard := auth.NewEndpointGuard(params.AuthMgr)
 	svc := &SubmissionService{
 		guard:     guard,
 		store:     params.Store,

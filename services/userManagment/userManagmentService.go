@@ -31,7 +31,7 @@ func (s *UserManagementService) RegisterRoutes(mux *http.ServeMux) {
 }
 
 func NewUserManagementService(pool *pgxpool.Pool, authMgr auth.AuthManager, appContext string, timeout uint) *UserManagementService {
-	guard := auth.NewEndpointGuard(authMgr, appContext)
+	guard := auth.NewEndpointGuard(authMgr)
 	if timeout != 0 {
 		return &UserManagementService{guard: guard, store: store.NewStore(pool), timeout: time.Duration(timeout) * time.Second}
 	} else {

@@ -141,7 +141,7 @@ func (dm *DeadlineMgr) executeTask(ctx context.Context, stageID int64) {
 			ctx,
 			db.CountPlusOnesParams{
 				SubmissionID:  submission.ID,
-				PipelineStage: submission.PipelineStage,
+				PipelineStage: stage.ID,
 			},
 		)
 		if err != nil {

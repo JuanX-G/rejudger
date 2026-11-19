@@ -1,5 +1,6 @@
 name: "pipeline1"
 description: "the first pipeline"
+context: "tech"
 stages:
     - name: "review"
       plus_ones_required: 1

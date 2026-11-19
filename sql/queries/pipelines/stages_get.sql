@@ -17,3 +17,7 @@ WHERE id = $1;
 -- name: GetPipelineStage :one
 SELECT * FROM pipeline_stages
 WHERE pipeline_id = $1 AND position = $2;
+
+-- name: GetStagePositionByID :one
+SELECT position FROM pipeline_stages
+WHERE id = $1;

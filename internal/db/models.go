@@ -37,7 +37,7 @@ type PipelineStage struct {
 type PlusOne struct {
 	UserID        int64
 	SubmissionID  int64
-	PipelineStage int32
+	PipelineStage int64
 	MadeAt        pgtype.Timestamp
 }
 
@@ -87,7 +87,7 @@ type Submission struct {
 	Author        int64
 	Hash          string
 	Pipeline      int64
-	PipelineStage int32
+	PipelineStage int64
 }
 
 type SubmissionArtifact struct {

@@ -53,7 +53,6 @@ func (ps *mockBasePermissionMgrStore) GetUserPermissions(_ context.Context, id i
 	if id == 24 {
 		return []db.Permission{}, fmt.Errorf("ERROR")
 	}
-	fmt.Printf("perm set given: %+v\n", DEFAULT_PERMS_SLC)
 	return DEFAULT_PERMS_SLC, nil
 }
 

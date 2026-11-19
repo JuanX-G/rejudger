@@ -1,4 +1,4 @@
 CREATE TABLE contexts (
     id BIGSERIAL PRIMARY KEY,
-    name STRING NOT NULL UNIQUE
+    name TEXT NOT NULL UNIQUE
 );

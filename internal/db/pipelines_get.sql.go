@@ -9,6 +9,18 @@ import (
 	"context"
 )
 
+const getFirstPipelineStageID = `-- name: GetFirstPipelineStageID :one
+SELECT id FROM pipeline_stages
+WHERE pipeline_id = $1 AND position = 0
+`
+
+func (q *Queries) GetFirstPipelineStageID(ctx context.Context, pipelineID int64) (int64, error) {
+	row := q.db.QueryRow(ctx, getFirstPipelineStageID, pipelineID)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const getHowManyUseByPipelineId = `-- name: GetHowManyUseByPipelineId :one
 SELECT COUNT(s.id)
 FROM submissions s
@@ -22,6 +34,26 @@ func (q *Queries) GetHowManyUseByPipelineId(ctx context.Context, id int64) (int6
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const getPipelineByContextName = `-- name: GetPipelineByContextName :one
+SELECT p.id, p.name, p.version, p.description, p.context FROM pipelines p
+JOIN contexts cx
+    ON p.context = cx.id
+WHERE cx.name = $1
+`
+
+func (q *Queries) GetPipelineByContextName(ctx context.Context, name string) (Pipeline, error) {
+	row := q.db.QueryRow(ctx, getPipelineByContextName, name)
+	var i Pipeline
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Version,
+		&i.Description,
+		&i.Context,
+	)
+	return i, err
 }
 
 const getPipelineByVersion = `-- name: GetPipelineByVersion :one

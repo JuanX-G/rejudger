@@ -28,7 +28,7 @@ VALUES ($1, $2, $3)
 type AddPlusOneParams struct {
 	UserID        int64
 	SubmissionID  int64
-	PipelineStage int32
+	PipelineStage int64
 }
 
 func (q *Queries) AddPlusOne(ctx context.Context, arg AddPlusOneParams) error {
@@ -43,7 +43,7 @@ DELETE FROM plus_ones WHERE user_id = $1 AND submission_id = $2 AND pipeline_sta
 type DeletePlusOneParams struct {
 	UserID        int64
 	SubmissionID  int64
-	PipelineStage int32
+	PipelineStage int64
 }
 
 func (q *Queries) DeletePlusOne(ctx context.Context, arg DeletePlusOneParams) error {
@@ -61,7 +61,7 @@ type InsertSubmissionParams struct {
 	Author        int64
 	Hash          string
 	Pipeline      int64
-	PipelineStage int32
+	PipelineStage int64
 }
 
 func (q *Queries) InsertSubmission(ctx context.Context, arg InsertSubmissionParams) error {

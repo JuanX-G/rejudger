@@ -39,7 +39,7 @@ func (cm *ContextsConfigMgr) LoadContexts(f *os.File) error {
 		Contexts []string `yaml:"contexts" json:"contexts"`
 	}
 
-	err := dec.Decode(ctxs)
+	err := dec.Decode(&ctxs)
 	if err != nil {
 		return err
 	}

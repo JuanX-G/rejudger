@@ -75,9 +75,9 @@ const getUnusedRoles = `-- name: GetUnusedRoles :many
 SELECT r.id, r.name
 FROM roles r
 WHERE NOT EXISTS (
-    SELECT 1
+    SELECT user_id, role_id
     FROM user_roles ur
-    WHERE r.id = ur.role_id
+    WHERE r.id = ur.role_id LIMIT 1
 )
 `
 

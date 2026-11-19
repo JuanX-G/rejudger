@@ -2,6 +2,7 @@ package submission
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"revit/internal/db"
 	services "revit/internal/testingservices"
@@ -20,12 +21,28 @@ type mockSubmissionStore struct {
 	StageId      int
 }
 
+func (ss *mockSubmissionStore) DeletePlusOne(ctx context.Context, arg db.DeletePlusOneParams) error {
+	return nil
+}
+
 func (ss *mockSubmissionStore) GetUserById(ctx context.Context, id int64) (db.User, error) {
 	return db.User{
 		ID:    services.DEFAULT_USERID,
 		Name:  services.DEFAULT_USERNAME,
 		Email: pgtype.Text{String: services.DEFAULT_EMAIL, Valid: true},
 	}, nil
+}
+
+func (ss *mockSubmissionStore) GetFirstPipelineStageID(ctx context.Context, pipelineID int64) (int64, error) {
+	return 2, nil
+}
+
+func (ss *mockSubmissionStore) GetStagePositionByID(ctx context.Context, id int64) (int32, error) {
+	return 0, nil
+}
+
+func (ss *mockSubmissionStore) GetPipelineByContextName(ctx context.Context, name string) (db.Pipeline, error) {
+	return db.Pipeline{}, nil
 }
 
 func (ss *mockSubmissionStore) InsertSubmission(ctx context.Context, arg db.InsertSubmissionParams) error {
@@ -54,20 +71,29 @@ func (ss *mockSubmissionStore) GetSubmissionsByHash(ctx context.Context, hash st
 }
 
 func (ss *mockSubmissionStore) GetSubmissionsByAuthor(ctx context.Context, author int64) ([]db.Submission, error) {
+	if author != services.DEFAULT_USERID {
+		return []db.Submission{}, errors.New("no such user")
+	}
 	return DEFAULT_SUBMISSIONS, nil
 }
 
 func (ss *mockSubmissionStore) GetSubmissionsByAuthorOffset(ctx context.Context, arg db.GetSubmissionsByAuthorOffsetParams) ([]db.Submission, error) {
+	if arg.Author != services.DEFAULT_USERID {
+		return []db.Submission{}, errors.New("no such user")
+	}
 	if arg.Offset == 0 {
 		return DEFAULT_SUBMISSIONS, nil
 	} else if arg.Offset == 1 {
 		return []db.Submission{DEFAULT_SUBMISSION_2}, nil
 	} else {
-		return []db.Submission{}, nil // TODO: add error here
+		return []db.Submission{}, errors.New("offset out of range")
 	}
 }
 
 func (ss *mockSubmissionStore) GetUserByEmail(ctx context.Context, email pgtype.Text) (db.User, error) {
+	if email.String != DEFAULT_USERDATA.Email {
+		return db.User{}, nil
+	}
 	return db.User{
 		ID:    services.DEFAULT_USERID,
 		Name:  services.DEFAULT_USERNAME,
